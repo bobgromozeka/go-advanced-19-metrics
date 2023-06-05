@@ -13,7 +13,8 @@ func reportToServer(rm runtimeMetrics) {
 	signatures := makeEndpointsFromStructure(rm)
 
 	for _, signature := range signatures {
-		_, _ = http.Post(serverHost+signature, "text/plain", nil)
+		resp, _ := http.Post(serverHost+signature, "text/plain", nil)
+		_ = resp.Body.Close()
 	}
 }
 
