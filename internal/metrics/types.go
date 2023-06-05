@@ -1,4 +1,4 @@
-package mertics
+package metrics
 
 import "strconv"
 
@@ -12,7 +12,7 @@ var validNames = map[string]struct{}{
 	Counter: {},
 }
 
-func parseCounter(value string) (int64, error) {
+func ParseCounter(value string) (int64, error) {
 	v, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return 0, err
@@ -21,7 +21,7 @@ func parseCounter(value string) (int64, error) {
 	return v, nil
 }
 
-func parseGauge(value string) (float64, error) {
+func ParseGauge(value string) (float64, error) {
 	v, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return 0, err
@@ -35,10 +35,10 @@ func IsValidValue(metricsType string, value string) bool {
 
 	switch metricsType {
 	case Counter:
-		_, err := parseCounter(value)
+		_, err := ParseCounter(value)
 		isValid = err == nil
 	case Gauge:
-		_, err := parseGauge(value)
+		_, err := ParseGauge(value)
 		isValid = err == nil
 	}
 
