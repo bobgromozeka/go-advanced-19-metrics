@@ -14,7 +14,9 @@ func reportToServer(rm runtimeMetrics) {
 
 	for _, signature := range signatures {
 		resp, _ := http.Post(serverHost+signature, "text/plain", nil)
-		_ = resp.Body.Close()
+		if resp != nil {
+			resp.Body.Close()
+		}
 	}
 }
 
