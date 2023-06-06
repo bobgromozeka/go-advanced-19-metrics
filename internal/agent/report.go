@@ -8,7 +8,7 @@ import (
 )
 
 func reportToServer(rm runtimeMetrics) {
-	serverHost := "http://localhost:8080"
+	serverHost := "http://" + serverAddr
 
 	signatures := makeEndpointsFromStructure(rm)
 

@@ -6,7 +6,9 @@ import (
 )
 
 func main() {
-	err := server.Start()
+	parseFlags()
+
+	err := server.Start(serverAddr)
 
 	if err != nil {
 		fmt.Println("Error during server start: ", err)

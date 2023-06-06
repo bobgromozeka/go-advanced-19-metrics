@@ -19,9 +19,10 @@ func new(s storage.Storage) *chi.Mux {
 	return r
 }
 
-func Start() error {
+func Start(serverAddr string) error {
+
 	s := storage.New()
 	server := new(s)
 
-	return http.ListenAndServe(":8080", server)
+	return http.ListenAndServe(serverAddr, server)
 }
