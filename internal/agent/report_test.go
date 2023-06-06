@@ -23,7 +23,7 @@ func Test_makeEndpointsFromStructure(t *testing.T) {
 				},
 			},
 			want: []string{
-				"/update/counter/PollCount/123/",
+				"/update/counter/PollCount/123",
 			},
 			positive: true,
 		},
@@ -36,8 +36,8 @@ func Test_makeEndpointsFromStructure(t *testing.T) {
 				},
 			},
 			want: []string{
-				"/update/gauge/Alloc/1/",
-				"/update/gauge/NumGC/2/",
+				"/update/gauge/Alloc/1",
+				"/update/gauge/NumGC/2",
 			},
 			positive: true,
 		},
@@ -51,7 +51,7 @@ func Test_makeEndpointsFromStructure(t *testing.T) {
 				},
 			},
 			want: []string{
-				"/update/gauge/RandomField/asd/",
+				"/update/gauge/RandomField/asd",
 			},
 			positive: false,
 		},
