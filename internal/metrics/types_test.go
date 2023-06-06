@@ -12,12 +12,12 @@ func TestIsValidType(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "Gauge is valid",
+			name: "GaugeType is valid",
 			Type: "gauge",
 			want: true,
 		},
 		{
-			name: "Counter is valid",
+			name: "CounterType is valid",
 			Type: "counter",
 			want: true,
 		},

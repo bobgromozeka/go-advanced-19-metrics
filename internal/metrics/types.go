@@ -2,17 +2,20 @@ package metrics
 
 import "strconv"
 
+type Gauge = float64
+type Counter = int64
+
 const (
-	Gauge   = "gauge"
-	Counter = "counter"
+	GaugeType   = "gauge"
+	CounterType = "counter"
 )
 
 var validNames = map[string]struct{}{
-	Gauge:   {},
-	Counter: {},
+	GaugeType:   {},
+	CounterType: {},
 }
 
-func ParseCounter(value string) (int64, error) {
+func ParseCounter(value string) (Counter, error) {
 	v, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return 0, err
@@ -21,7 +24,7 @@ func ParseCounter(value string) (int64, error) {
 	return v, nil
 }
 
-func ParseGauge(value string) (float64, error) {
+func ParseGauge(value string) (Gauge, error) {
 	v, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return 0, err
@@ -34,10 +37,10 @@ func IsValidValue(metricsType string, value string) bool {
 	isValid := false
 
 	switch metricsType {
-	case Counter:
+	case CounterType:
 		_, err := ParseCounter(value)
 		isValid = err == nil
-	case Gauge:
+	case GaugeType:
 		_, err := ParseGauge(value)
 		isValid = err == nil
 	}

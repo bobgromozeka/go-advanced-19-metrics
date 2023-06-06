@@ -3,20 +3,25 @@ package server
 import (
 	"github.com/bobgromozeka/metrics/internal/server/handlers"
 	"github.com/bobgromozeka/metrics/internal/server/storage"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 )
 
-func new(s storage.Storage) *http.ServeMux {
-	mux := http.NewServeMux()
+func new(s storage.Storage) *chi.Mux {
+	r := chi.NewRouter()
 
-	mux.HandleFunc("/update/", handlers.UpdateHandler(s))
+	r.Use(middleware.StripSlashes)
+	r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
+	r.Get("/value/{type}/{name}", handlers.Get(s))
+	r.Get("/", handlers.GetAll(s))
 
-	return mux
+	return r
 }
 
 func Start() error {
-	storage := storage.New()
-	server := new(storage)
+	s := storage.New()
+	server := new(s)
 
 	return http.ListenAndServe(":8080", server)
 }

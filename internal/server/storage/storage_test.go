@@ -1,19 +1,33 @@
 package storage
 
 import (
+	"github.com/bobgromozeka/metrics/internal/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestMemStorage_GetAll(t *testing.T) {
+func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 	s := MemStorage{
-		metrics: map[string]any{
-			"name": float64(1),
+		gaugeMetrics: map[string]metrics.Gauge{
+			"name": metrics.Gauge(1),
 		},
 	}
 
-	content := s.GetAll()
+	content := s.GetAllGaugeMetrics()
+
+	require.Contains(t, content, "name")
+	assert.EqualValues(t, 1, content["name"])
+}
+
+func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
+	s := MemStorage{
+		counterMetrics: map[string]metrics.Counter{
+			"name": metrics.Counter(1),
+		},
+	}
+
+	content := s.GetAllCounterMetrics()
 
 	require.Contains(t, content, "name")
 	assert.EqualValues(t, 1, content["name"])
@@ -21,7 +35,7 @@ func TestMemStorage_GetAll(t *testing.T) {
 
 func TestMemStorage_addCounter(t *testing.T) {
 	type fields struct {
-		metrics map[string]any
+		metrics map[string]metrics.Counter
 	}
 	type args struct {
 		name  string
@@ -37,7 +51,7 @@ func TestMemStorage_addCounter(t *testing.T) {
 		{
 			name: "successfully adds value to counter",
 			fields: fields{
-				metrics: map[string]any{
+				metrics: map[string]metrics.Counter{
 					"c": int64(1),
 				},
 			},
@@ -51,7 +65,7 @@ func TestMemStorage_addCounter(t *testing.T) {
 		{
 			name: "successfully creates new metrics",
 			fields: fields{
-				metrics: map[string]any{},
+				metrics: map[string]metrics.Counter{},
 			},
 			args: args{
 				name:  "c",
@@ -63,7 +77,7 @@ func TestMemStorage_addCounter(t *testing.T) {
 		{
 			name: "ignores wrong values",
 			fields: fields{
-				metrics: map[string]any{
+				metrics: map[string]metrics.Counter{
 					"c": int64(1),
 				},
 			},
@@ -78,18 +92,18 @@ func TestMemStorage_addCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := MemStorage{
-				metrics: tt.fields.metrics,
+				counterMetrics: tt.fields.metrics,
 			}
 			assert.Equal(t, tt.want, s.addCounter(tt.args.name, tt.args.value))
-			require.Contains(t, s.metrics, tt.args.name)
-			assert.EqualValues(t, tt.wantValue, s.metrics[tt.args.name])
+			require.Contains(t, s.counterMetrics, tt.args.name)
+			assert.EqualValues(t, tt.wantValue, s.counterMetrics[tt.args.name])
 		})
 	}
 }
 
 func TestMemStorage_setGauge(t *testing.T) {
 	type fields struct {
-		metrics map[string]any
+		metrics map[string]metrics.Gauge
 	}
 	type args struct {
 		name  string
@@ -105,7 +119,7 @@ func TestMemStorage_setGauge(t *testing.T) {
 		{
 			name: "successfully sets value to gauge",
 			fields: fields{
-				metrics: map[string]any{
+				metrics: map[string]metrics.Gauge{
 					"c": float64(1),
 				},
 			},
@@ -119,7 +133,7 @@ func TestMemStorage_setGauge(t *testing.T) {
 		{
 			name: "successfully creates new metrics",
 			fields: fields{
-				metrics: map[string]any{},
+				metrics: map[string]metrics.Gauge{},
 			},
 			args: args{
 				name:  "c",
@@ -131,7 +145,7 @@ func TestMemStorage_setGauge(t *testing.T) {
 		{
 			name: "ignores wrong values",
 			fields: fields{
-				metrics: map[string]any{
+				metrics: map[string]metrics.Gauge{
 					"c": float64(1),
 				},
 			},
@@ -146,12 +160,12 @@ func TestMemStorage_setGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := MemStorage{
-				metrics: tt.fields.metrics,
+				gaugeMetrics: tt.fields.metrics,
 			}
 			if got := s.setGauge(tt.args.name, tt.args.value); got != tt.want {
 				assert.Equal(t, tt.want, s.addCounter(tt.args.name, tt.args.value))
-				require.Contains(t, s.metrics, tt.args.name)
-				assert.EqualValues(t, tt.wantValue, s.metrics[tt.args.name])
+				require.Contains(t, s.gaugeMetrics, tt.args.name)
+				assert.EqualValues(t, tt.wantValue, s.gaugeMetrics[tt.args.name])
 			}
 		})
 	}

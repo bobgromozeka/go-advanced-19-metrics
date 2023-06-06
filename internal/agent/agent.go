@@ -7,8 +7,8 @@ import (
 )
 
 var runtimeMetricsTypes = map[string]string{
-	//Gauge if not specified here
-	"PollCount": metrics.Counter,
+	//GaugeType if not specified here
+	"PollCount": metrics.CounterType,
 }
 
 type runtimeMetrics struct {
@@ -58,8 +58,8 @@ func Run() {
 
 	go func() {
 		for {
-			reportToServer(rm)
 			time.Sleep(time.Second * 10)
+			reportToServer(rm) // Wait while some metrics are collected
 		}
 	}()
 

@@ -3,7 +3,7 @@ package agent
 import (
 	"fmt"
 	"github.com/bobgromozeka/metrics/internal/metrics"
-	"net/http"
+	"github.com/go-resty/resty/v2"
 	"reflect"
 )
 
@@ -12,11 +12,9 @@ func reportToServer(rm runtimeMetrics) {
 
 	signatures := makeEndpointsFromStructure(rm)
 
+	c := resty.New()
 	for _, signature := range signatures {
-		resp, _ := http.Post(serverHost+signature, "text/plain", nil)
-		if resp != nil {
-			resp.Body.Close()
-		}
+		_, _ = c.R().Post(serverHost + signature)
 	}
 }
 
@@ -42,12 +40,12 @@ func makeEndpointsFromStructure(rm any) []string {
 				continue
 			}
 
-			metricsType := metrics.Gauge
+			metricsType := metrics.GaugeType
 			if mt, ok := runtimeMetricsTypes[fieldT.Name]; ok {
 				metricsType = mt
 			}
 
-			signatures = append(signatures, fmt.Sprintf("/update/%s/%s/%s/", metricsType, fieldT.Name, metricsValue))
+			signatures = append(signatures, fmt.Sprintf("/update/%s/%s/%s", metricsType, fieldT.Name, metricsValue))
 		}
 	}
 
