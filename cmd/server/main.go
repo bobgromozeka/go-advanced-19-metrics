@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	parseFlags()
+	setupConfiguration()
 
 	err := server.Start(serverAddr)
 
