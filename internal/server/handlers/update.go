@@ -26,7 +26,11 @@ func Update(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		s.UpdateMetricsType(metricsType, metricsName, metricsValue)
+		_, err := s.UpdateMetricsType(metricsType, metricsName, metricsValue)
+
+		if err != nil {
+			log.Printf("Could not update metrics: [type: %s, name: %s, value: %s]: %s ", metricsType, metricsName, metricsValue, err)
+		}
 
 		w.WriteHeader(http.StatusOK)
 	}

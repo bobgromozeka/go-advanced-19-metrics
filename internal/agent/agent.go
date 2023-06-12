@@ -24,7 +24,7 @@ func Run(c StartupConfig) {
 	go func() {
 		for {
 			time.Sleep(time.Second * time.Duration(c.ReportInterval)) // Wait while some metrics are collected
-			reportToServer(rm)
+			reportToServer(serverAddr, rm)
 		}
 	}()
 

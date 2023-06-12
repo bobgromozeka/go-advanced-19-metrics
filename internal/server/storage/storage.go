@@ -8,7 +8,7 @@ type GaugeMetrics map[string]float64
 type CounterMetrics map[string]int64
 
 type Storage interface {
-	UpdateMetricsType(string, string, string) bool
+	UpdateMetricsType(string, string, string) (bool, error)
 	GetAllGaugeMetrics() GaugeMetrics
 	GetAllCounterMetrics() CounterMetrics
 	GetMetrics(metricsType string, name string) (any, bool)
@@ -26,14 +26,14 @@ func New() MemStorage {
 	}
 }
 
-func (s MemStorage) UpdateMetricsType(metricsType string, name string, value string) bool {
+func (s MemStorage) UpdateMetricsType(metricsType string, name string, value string) (bool, error) {
 	switch metricsType {
 	case metrics.CounterType:
 		return s.addCounter(name, value)
 	case metrics.GaugeType:
 		return s.setGauge(name, value)
 	default:
-		return false
+		return false, nil
 	}
 }
 
@@ -45,22 +45,21 @@ func (s MemStorage) GetAllCounterMetrics() CounterMetrics {
 	return s.counterMetrics
 }
 
-func (s MemStorage) GetMetrics(metricsType string, name string) (any, bool) {
-	var v any
-	var ok bool
+func (s MemStorage) GetMetrics(metricsType string, name string) (v any, ok bool) {
 	switch metricsType {
 	case metrics.GaugeType:
 		v, ok = s.GetAllGaugeMetrics()[name]
 	case metrics.CounterType:
 		v, ok = s.GetAllCounterMetrics()[name]
 	}
-	return v, ok
+
+	return
 }
 
-func (s MemStorage) addCounter(name string, value string) bool {
+func (s MemStorage) addCounter(name string, value string) (bool, error) {
 	parsedValue, err := metrics.ParseCounter(value)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	if _, ok := s.counterMetrics[name]; !ok {
@@ -69,13 +68,13 @@ func (s MemStorage) addCounter(name string, value string) bool {
 
 	s.counterMetrics[name] += parsedValue
 
-	return true
+	return true, nil
 }
 
-func (s MemStorage) setGauge(name string, value string) bool {
+func (s MemStorage) setGauge(name string, value string) (bool, error) {
 	parsedValue, err := metrics.ParseGauge(value)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	if _, ok := s.gaugeMetrics[name]; !ok {
@@ -84,5 +83,5 @@ func (s MemStorage) setGauge(name string, value string) bool {
 
 	s.gaugeMetrics[name] = parsedValue
 
-	return true
+	return true, nil
 }

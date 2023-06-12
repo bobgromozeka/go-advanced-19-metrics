@@ -18,7 +18,7 @@ const (
 )
 
 func parseFlags() {
-	flag.StringVar(&serverAddr, "a", "localhost:8080", "server address to send metrics")
+	flag.StringVar(&serverAddr, "a", "http://localhost:8080", "server address to send metrics (with scheme)")
 	flag.IntVar(&pollInterval, "p", 2, "Metrics polling interval")
 	flag.IntVar(&reportInterval, "r", 10, "Metrics reporting interval to server")
 

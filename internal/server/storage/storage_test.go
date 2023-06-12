@@ -94,7 +94,8 @@ func TestMemStorage_addCounter(t *testing.T) {
 			s := MemStorage{
 				counterMetrics: tt.fields.metrics,
 			}
-			assert.Equal(t, tt.want, s.addCounter(tt.args.name, tt.args.value))
+			added, _ := s.addCounter(tt.args.name, tt.args.value)
+			assert.Equal(t, tt.want, added)
 			require.Contains(t, s.counterMetrics, tt.args.name)
 			assert.EqualValues(t, tt.wantValue, s.counterMetrics[tt.args.name])
 		})
@@ -162,8 +163,8 @@ func TestMemStorage_setGauge(t *testing.T) {
 			s := MemStorage{
 				gaugeMetrics: tt.fields.metrics,
 			}
-			if got := s.setGauge(tt.args.name, tt.args.value); got != tt.want {
-				assert.Equal(t, tt.want, s.addCounter(tt.args.name, tt.args.value))
+			if got, _ := s.setGauge(tt.args.name, tt.args.value); got != tt.want {
+				assert.Equal(t, tt.want, got)
 				require.Contains(t, s.gaugeMetrics, tt.args.name)
 				assert.EqualValues(t, tt.wantValue, s.gaugeMetrics[tt.args.name])
 			}

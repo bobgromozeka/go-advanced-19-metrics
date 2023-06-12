@@ -7,14 +7,13 @@ import (
 	"reflect"
 )
 
-func reportToServer(rm runtimeMetrics) {
-	serverHost := "http://" + serverAddr
+func reportToServer(serverAddr string, rm runtimeMetrics) {
 
 	signatures := makeEndpointsFromStructure(rm)
 
 	c := resty.New()
 	for _, signature := range signatures {
-		_, _ = c.R().Post(serverHost + signature)
+		_, _ = c.R().Post(serverAddr + signature)
 	}
 }
 
