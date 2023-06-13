@@ -11,9 +11,9 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 
 	signatures := makeEndpointsFromStructure(rm)
 
-	c := resty.New()
+	client := resty.New()
 	for _, signature := range signatures {
-		_, _ = c.R().Post(serverAddr + signature)
+		_, _ = client.R().Post(serverAddr + signature)
 	}
 }
 
