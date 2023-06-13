@@ -7,6 +7,7 @@ func main() {
 
 	agent.Run(agent.StartupConfig{
 		ServerAddr:     serverAddr,
+		ServerScheme:   serverScheme,
 		ReportInterval: reportInterval,
 		PollInterval:   pollInterval,
 	})

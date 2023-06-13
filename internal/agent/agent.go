@@ -8,7 +8,7 @@ import (
 var serverAddr string
 
 func Run(c StartupConfig) {
-	serverAddr = c.ServerAddr
+	serverAddr = c.ServerScheme + "://" + c.ServerAddr
 	rm := runtimeMetrics{}
 
 	wg := sync.WaitGroup{}
