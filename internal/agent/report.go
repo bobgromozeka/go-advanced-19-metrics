@@ -2,9 +2,11 @@ package agent
 
 import (
 	"fmt"
-	"github.com/bobgromozeka/metrics/internal/metrics"
-	"github.com/go-resty/resty/v2"
 	"reflect"
+
+	"github.com/bobgromozeka/metrics/internal/metrics"
+
+	"github.com/go-resty/resty/v2"
 )
 
 func reportToServer(serverAddr string, rm runtimeMetrics) {

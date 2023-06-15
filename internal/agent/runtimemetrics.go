@@ -1,9 +1,10 @@
 package agent
 
 import (
-	"github.com/bobgromozeka/metrics/internal/metrics"
 	"math/rand"
 	"runtime"
+
+	"github.com/bobgromozeka/metrics/internal/metrics"
 )
 
 var runtimeMetricsTypes = map[string]string{
