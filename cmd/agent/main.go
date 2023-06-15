@@ -1,6 +1,8 @@
 package main
 
-import "github.com/bobgromozeka/metrics/internal/agent"
+import (
+	"github.com/bobgromozeka/metrics/internal/agent"
+)
 
 func main() {
 	setupConfiguration()

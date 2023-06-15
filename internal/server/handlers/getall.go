@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/bobgromozeka/metrics/internal/server/storage"
 	"net/http"
+
+	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
 func GetAll(s storage.Storage) http.HandlerFunc {

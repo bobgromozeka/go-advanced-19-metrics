@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"testing"
+
 	"github.com/bobgromozeka/metrics/internal/metrics"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {

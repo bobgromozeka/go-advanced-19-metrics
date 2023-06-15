@@ -1,6 +1,8 @@
 package metrics
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type Gauge = float64
 type Counter = int64
