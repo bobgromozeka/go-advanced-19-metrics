@@ -22,5 +22,6 @@ func Get(s storage.Storage) http.HandlerFunc {
 		}
 
 		w.Write([]byte(fmt.Sprintf("%v", m)))
+		w.WriteHeader(http.StatusOK)
 	}
 }

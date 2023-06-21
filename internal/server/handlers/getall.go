@@ -23,5 +23,6 @@ func GetAll(s storage.Storage) http.HandlerFunc {
 		}
 
 		w.Write([]byte(response))
+		w.WriteHeader(http.StatusOK)
 	}
 }
