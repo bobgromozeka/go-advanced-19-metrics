@@ -1,17 +1,15 @@
 package storage
 
-import (
-	"github.com/bobgromozeka/metrics/internal/metrics"
-)
-
 type GaugeMetrics map[string]float64
 type CounterMetrics map[string]int64
 
 type Storage interface {
-	UpdateMetricsType(string, string, string) (bool, error)
+	AddCounter(string, int64) int64
+	SetGauge(string, float64) float64
 	GetAllGaugeMetrics() GaugeMetrics
 	GetAllCounterMetrics() CounterMetrics
-	GetMetrics(metricsType string, name string) (any, bool)
+	GetGaugeMetrics(string) (float64, bool)
+	GetCounterMetrics(string) (int64, bool)
 }
 
 type MemStorage struct {
@@ -26,17 +24,6 @@ func New() MemStorage {
 	}
 }
 
-func (s MemStorage) UpdateMetricsType(metricsType string, name string, value string) (bool, error) {
-	switch metricsType {
-	case metrics.CounterType:
-		return s.addCounter(name, value)
-	case metrics.GaugeType:
-		return s.setGauge(name, value)
-	default:
-		return false, nil
-	}
-}
-
 func (s MemStorage) GetAllGaugeMetrics() GaugeMetrics {
 	return s.gaugeMetrics
 }
@@ -45,43 +32,32 @@ func (s MemStorage) GetAllCounterMetrics() CounterMetrics {
 	return s.counterMetrics
 }
 
-func (s MemStorage) GetMetrics(metricsType string, name string) (v any, ok bool) {
-	switch metricsType {
-	case metrics.GaugeType:
-		v, ok = s.GetAllGaugeMetrics()[name]
-	case metrics.CounterType:
-		v, ok = s.GetAllCounterMetrics()[name]
-	}
-
-	return
+func (s MemStorage) GetGaugeMetrics(name string) (v float64, ok bool) {
+	v, ok = s.GetAllGaugeMetrics()[name]
+	return v, ok
 }
 
-func (s MemStorage) addCounter(name string, value string) (bool, error) {
-	parsedValue, err := metrics.ParseCounter(value)
-	if err != nil {
-		return false, err
-	}
+func (s MemStorage) GetCounterMetrics(name string) (v int64, ok bool) {
+	v, ok = s.GetAllCounterMetrics()[name]
+	return v, ok
+}
 
+func (s MemStorage) AddCounter(name string, value int64) int64 {
 	if _, ok := s.counterMetrics[name]; !ok {
 		s.counterMetrics[name] = 0
 	}
 
-	s.counterMetrics[name] += parsedValue
+	s.counterMetrics[name] += value
 
-	return true, nil
+	return s.counterMetrics[name]
 }
 
-func (s MemStorage) setGauge(name string, value string) (bool, error) {
-	parsedValue, err := metrics.ParseGauge(value)
-	if err != nil {
-		return false, err
-	}
-
+func (s MemStorage) SetGauge(name string, value float64) float64 {
 	if _, ok := s.gaugeMetrics[name]; !ok {
 		s.gaugeMetrics[name] = 0
 	}
 
-	s.gaugeMetrics[name] = parsedValue
+	s.gaugeMetrics[name] = value
 
-	return true, nil
+	return value
 }

@@ -2,10 +2,18 @@ package metrics
 
 import (
 	"strconv"
+	"strings"
 )
 
 type Gauge = float64
 type Counter = int64
+
+type RequestPayload struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
 
 const (
 	GaugeType   = "gauge"
@@ -51,6 +59,6 @@ func IsValidValue(metricsType string, value string) bool {
 }
 
 func IsValidType(metricsType string) bool {
-	_, ok := validNames[metricsType]
+	_, ok := validNames[strings.ToLower(metricsType)]
 	return ok
 }

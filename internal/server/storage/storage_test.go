@@ -1,174 +1,289 @@
 package storage
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/bobgromozeka/metrics/internal/metrics"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
-	s := MemStorage{
-		gaugeMetrics: map[string]metrics.Gauge{
-			"name": metrics.Gauge(1),
-		},
-	}
-
-	content := s.GetAllGaugeMetrics()
-
-	require.Contains(t, content, "name")
-	assert.EqualValues(t, 1, content["name"])
-}
-
-func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
-	s := MemStorage{
-		counterMetrics: map[string]metrics.Counter{
-			"name": metrics.Counter(1),
-		},
-	}
-
-	content := s.GetAllCounterMetrics()
-
-	require.Contains(t, content, "name")
-	assert.EqualValues(t, 1, content["name"])
-}
-
-func TestMemStorage_addCounter(t *testing.T) {
+func TestMemStorage_AddCounter(t *testing.T) {
 	type fields struct {
-		metrics map[string]metrics.Counter
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
 	}
 	type args struct {
 		name  string
-		value string
+		value int64
 	}
 	tests := []struct {
-		name      string
-		fields    fields
-		args      args
-		want      bool
-		wantValue uint64
+		name   string
+		fields fields
+		args   args
+		want   int64
 	}{
 		{
-			name: "successfully adds value to counter",
+			name: "Adds counter to existing metrics",
 			fields: fields{
-				metrics: map[string]metrics.Counter{
-					"c": int64(1),
-				},
+				gaugeMetrics:   map[string]float64{},
+				counterMetrics: CounterMetrics{"a": 5},
 			},
 			args: args{
-				name:  "c",
-				value: "1",
+				name:  "a",
+				value: 10,
 			},
-			want:      true,
-			wantValue: 2,
+			want: 15,
 		},
 		{
-			name: "successfully creates new metrics",
+			name: "Adds counter to non-existing metrics",
 			fields: fields{
-				metrics: map[string]metrics.Counter{},
+				gaugeMetrics:   map[string]float64{},
+				counterMetrics: CounterMetrics{"a": 5},
 			},
 			args: args{
-				name:  "c",
-				value: "1",
+				name:  "b",
+				value: 10,
 			},
-			want:      true,
-			wantValue: 1,
-		},
-		{
-			name: "ignores wrong values",
-			fields: fields{
-				metrics: map[string]metrics.Counter{
-					"c": int64(1),
-				},
-			},
-			args: args{
-				name:  "c",
-				value: "1wrongvalue",
-			},
-			want:      false,
-			wantValue: 1,
+			want: 10,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := MemStorage{
-				counterMetrics: tt.fields.metrics,
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
 			}
-			added, _ := s.addCounter(tt.args.name, tt.args.value)
-			assert.Equal(t, tt.want, added)
-			require.Contains(t, s.counterMetrics, tt.args.name)
-			assert.EqualValues(t, tt.wantValue, s.counterMetrics[tt.args.name])
+			if got := s.AddCounter(tt.args.name, tt.args.value); got != tt.want {
+				t.Errorf("AddCounter() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
 
-func TestMemStorage_setGauge(t *testing.T) {
+func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 	type fields struct {
-		metrics map[string]metrics.Gauge
-	}
-	type args struct {
-		name  string
-		value string
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
 	}
 	tests := []struct {
-		name      string
-		fields    fields
-		args      args
-		want      bool
-		wantValue uint64
+		name   string
+		fields fields
+		want   CounterMetrics
 	}{
 		{
-			name: "successfully sets value to gauge",
+			name: "Can get all metrics",
 			fields: fields{
-				metrics: map[string]metrics.Gauge{
-					"c": float64(1),
-				},
+				gaugeMetrics:   GaugeMetrics{"a": 1.11},
+				counterMetrics: CounterMetrics{"b": 123},
 			},
-			args: args{
-				name:  "c",
-				value: "123",
-			},
-			want:      true,
-			wantValue: 123,
-		},
-		{
-			name: "successfully creates new metrics",
-			fields: fields{
-				metrics: map[string]metrics.Gauge{},
-			},
-			args: args{
-				name:  "c",
-				value: "122",
-			},
-			want:      true,
-			wantValue: 122,
-		},
-		{
-			name: "ignores wrong values",
-			fields: fields{
-				metrics: map[string]metrics.Gauge{
-					"c": float64(1),
-				},
-			},
-			args: args{
-				name:  "c",
-				value: "1wrongvalue",
-			},
-			want:      false,
-			wantValue: 1,
+			want: CounterMetrics{"b": 123},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := MemStorage{
-				gaugeMetrics: tt.fields.metrics,
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
 			}
-			if got, _ := s.setGauge(tt.args.name, tt.args.value); got != tt.want {
-				assert.Equal(t, tt.want, got)
-				require.Contains(t, s.gaugeMetrics, tt.args.name)
-				assert.EqualValues(t, tt.wantValue, s.gaugeMetrics[tt.args.name])
+			if got := s.GetAllCounterMetrics(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAllCounterMetrics() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
+	type fields struct {
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   GaugeMetrics
+	}{
+		{
+			name: "Can get all metrics",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{"a": 1.11},
+				counterMetrics: CounterMetrics{"b": 123},
+			},
+			want: GaugeMetrics{"a": 1.11},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := MemStorage{
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
+			}
+			if got := s.GetAllGaugeMetrics(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAllGaugeMetrics() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMemStorage_GetCounterMetrics(t *testing.T) {
+	type fields struct {
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
+	}
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		wantV  int64
+		wantOk bool
+	}{
+		{
+			name: "Can get metrics when exists",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{},
+				counterMetrics: CounterMetrics{"a": 1234},
+			},
+			args: args{
+				name: "a",
+			},
+			wantV:  1234,
+			wantOk: true,
+		},
+		{
+			name: "Can't get metrics when exists",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{},
+				counterMetrics: CounterMetrics{"a": 1234},
+			},
+			args: args{
+				name: "b",
+			},
+			wantV:  0,
+			wantOk: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := MemStorage{
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
+			}
+			gotV, gotOk := s.GetCounterMetrics(tt.args.name)
+			if gotV != tt.wantV {
+				t.Errorf("GetCounterMetrics() gotV = %v, want %v", gotV, tt.wantV)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("GetCounterMetrics() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}
+
+func TestMemStorage_GetGaugeMetrics(t *testing.T) {
+	type fields struct {
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
+	}
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		wantV  float64
+		wantOk bool
+	}{
+		{
+			name: "Can get metrics when exists",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{"a": 1234.123},
+				counterMetrics: CounterMetrics{},
+			},
+			args: args{
+				name: "a",
+			},
+			wantV:  1234.123,
+			wantOk: true,
+		},
+		{
+			name: "Can't get metrics when exists",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{"a": 1234.123},
+				counterMetrics: CounterMetrics{},
+			},
+			args: args{
+				name: "b",
+			},
+			wantV:  0,
+			wantOk: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := MemStorage{
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
+			}
+			gotV, gotOk := s.GetGaugeMetrics(tt.args.name)
+			if gotV != tt.wantV {
+				t.Errorf("GetGaugeMetrics() gotV = %v, want %v", gotV, tt.wantV)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("GetGaugeMetrics() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}
+
+func TestMemStorage_SetGauge(t *testing.T) {
+	type fields struct {
+		gaugeMetrics   GaugeMetrics
+		counterMetrics CounterMetrics
+	}
+	type args struct {
+		name  string
+		value float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   float64
+	}{
+		{
+			name: "Sets gauge to existing metrics",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{"a": 1.11},
+				counterMetrics: CounterMetrics{"a": 5},
+			},
+			args: args{
+				name:  "a",
+				value: 2.22,
+			},
+			want: 2.22,
+		},
+		{
+			name: "Sets gauge to non-existing metrics",
+			fields: fields{
+				gaugeMetrics:   GaugeMetrics{},
+				counterMetrics: CounterMetrics{"a": 5},
+			},
+			args: args{
+				name:  "b",
+				value: 10.111,
+			},
+			want: 10.111,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := MemStorage{
+				gaugeMetrics:   tt.fields.gaugeMetrics,
+				counterMetrics: tt.fields.counterMetrics,
+			}
+			if got := s.SetGauge(tt.args.name, tt.args.value); got != tt.want {
+				t.Errorf("SetGauge() = %v, want %v", got, tt.want)
 			}
 		})
 	}

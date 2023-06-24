@@ -1,20 +1,25 @@
 package agent
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/bobgromozeka/metrics/internal/metrics"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_makeEndpointsFromStructure(t *testing.T) {
+func Test_makeBodiesFromStructure(t *testing.T) {
+	counterValue1 := int64(123)
+	counterValue2 := int64(1)
+	counterValue3 := int64(2)
 	type args struct {
 		rm any
 	}
 	tests := []struct {
-		name     string
-		args     args
-		want     []string
-		positive bool
+		name string
+		args args
+		want []metrics.RequestPayload
 	}{
 		{
 			name: `Makes "counter" update from PollCount`,
@@ -23,10 +28,13 @@ func Test_makeEndpointsFromStructure(t *testing.T) {
 					PollCount: 123,
 				},
 			},
-			want: []string{
-				"/update/counter/PollCount/123",
+			want: []metrics.RequestPayload{
+				{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: &counterValue1,
+				},
 			},
-			positive: true,
 		},
 		{
 			name: "Can work with uint64 and uint32",
@@ -36,34 +44,33 @@ func Test_makeEndpointsFromStructure(t *testing.T) {
 					NumGC: 2,
 				},
 			},
-			want: []string{
-				"/update/gauge/Alloc/1",
-				"/update/gauge/NumGC/2",
-			},
-			positive: true,
-		},
-		{
-			name: "Skips unknown types",
-			args: args{
-				rm: struct {
-					RandomField string
-				}{
-					RandomField: "asd",
+			want: []metrics.RequestPayload{
+				{
+					ID:    "Alloc",
+					MType: "gauge",
+					Delta: &counterValue2,
+				},
+				{
+					ID:    "NumGC",
+					MType: "gauge",
+					Delta: &counterValue3,
 				},
 			},
-			want: []string{
-				"/update/gauge/RandomField/asd",
-			},
-			positive: false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.positive {
-				assert.Subset(t, makeEndpointsFromStructure(test.args.rm), test.want)
-			} else {
-				assert.NotSubset(t, makeEndpointsFromStructure(test.args.rm), test.want)
-			}
+			assert.True(t, reflect.DeepEqual(makeBodiesFromStructure(test.args.rm), test.want))
 		})
 	}
+}
+
+func Test_makeBodiesSkipsUnknownTypes(t *testing.T) {
+	randomRM := struct {
+		RandomField string
+	}{
+		RandomField: "asd",
+	}
+
+	assert.Len(t, makeBodiesFromStructure(randomRM), 0)
 }

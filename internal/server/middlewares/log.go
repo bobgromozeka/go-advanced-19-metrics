@@ -9,7 +9,6 @@ import (
 )
 
 var logger = zap.NewNop()
-var sugaredLogger *zap.SugaredLogger
 var logPath = "./http.log"
 
 type (
@@ -49,7 +48,6 @@ func init() {
 	}
 
 	logger = zlogger
-	sugaredLogger = logger.Sugar()
 }
 
 func WithLogging(f http.Handler) http.Handler {
@@ -63,9 +61,15 @@ func WithLogging(f http.Handler) http.Handler {
 		}
 
 		f.ServeHTTP(lw, r)
-		timeEnd := time.Since(timeStart)
+		requestTime := time.Since(timeStart)
 
-		sugaredLogger.Infof("Got [%s] request on endpoint %s and it took %s. Status code = %d, content length = %d", r.Method, r.URL.Path, timeEnd, rd.statusCode, rd.contentLen)
+		logger.Info("Got request",
+			zap.String("method", r.Method),
+			zap.String("endpoint", r.URL.Path),
+			zap.Duration("duration", requestTime),
+			zap.Int("status code", rd.statusCode),
+			zap.Int("content length", rd.contentLen),
+		)
 	}
 
 	return http.HandlerFunc(logFn)
