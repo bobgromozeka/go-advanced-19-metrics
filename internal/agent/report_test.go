@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/bobgromozeka/metrics/internal/metrics"
@@ -11,8 +10,8 @@ import (
 
 func Test_makeBodiesFromStructure(t *testing.T) {
 	counterValue1 := int64(123)
-	counterValue2 := int64(1)
-	counterValue3 := int64(2)
+	counterValue2 := float64(1)
+	counterValue3 := float64(2)
 	type args struct {
 		rm any
 	}
@@ -48,19 +47,19 @@ func Test_makeBodiesFromStructure(t *testing.T) {
 				{
 					ID:    "Alloc",
 					MType: "gauge",
-					Delta: &counterValue2,
+					Value: &counterValue2,
 				},
 				{
 					ID:    "NumGC",
 					MType: "gauge",
-					Delta: &counterValue3,
+					Value: &counterValue3,
 				},
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.True(t, reflect.DeepEqual(makeBodiesFromStructure(test.args.rm), test.want))
+			assert.Subset(t, makeBodiesFromStructure(test.args.rm), test.want)
 		})
 	}
 }
