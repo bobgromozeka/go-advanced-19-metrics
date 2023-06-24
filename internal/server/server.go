@@ -16,7 +16,9 @@ func new(s storage.Storage) *chi.Mux {
 
 	r.Use(middleware.StripSlashes)
 	r.Use(middlewares.WithLogging)
-	r.Post("/update", handlers.Update(s))
+	r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
+	r.Get("/value/{type}/{name}", handlers.Get(s))
+	r.Post("/update", handlers.UpdateJSON(s))
 	r.Post("/value", handlers.Get(s))
 	r.Get("/", handlers.GetAll(s))
 
