@@ -77,10 +77,8 @@ func UpdateJSON(s storage.Storage) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
-		if encodingErr := encoder.Encode(requestMetrics); encodingErr != nil {
-			log.Println("Error during encoding update request: ", encodingErr)
-			http.Error(w, encodingErr.Error(), http.StatusInternalServerError)
-		}
+		encoder.Encode(requestMetrics)
 	}
 }

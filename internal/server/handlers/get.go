@@ -19,13 +19,14 @@ func Get(s storage.Storage) http.HandlerFunc {
 
 		m, ok := s.GetMetricsByType(metricsType, metricsName)
 
+		w.Header().Set("Content-Type", "text/html")
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		w.Write([]byte(fmt.Sprintf("%v", m)))
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf("%v", m)))
 	}
 }
 
@@ -62,10 +63,8 @@ func GetJSON(s storage.Storage) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
-		if encodingErr := encoder.Encode(requestMetrics); encodingErr != nil {
-			log.Println("Error during encoding update request: ", encodingErr)
-			http.Error(w, encodingErr.Error(), http.StatusInternalServerError)
-		}
+		encoder.Encode(requestMetrics)
 	}
 }

@@ -1,9 +1,11 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
+	"log"
 	"reflect"
 
 	"github.com/go-resty/resty/v2"
@@ -15,9 +17,20 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 
 	client := resty.New()
 	for _, payload := range payloads {
+		encodedPayload, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("Could not encode request: ", err)
+			continue
+		}
+		gzippedPayload, gzErr := helpers.GzipBytes(encodedPayload)
+		if gzErr != nil {
+			log.Println("Could not gzip request: ", gzErr)
+			continue
+		}
 		_, _ = client.R().
 			SetHeader("Content-Type", "application/json").
-			SetBody(payload).
+			SetHeader("Content-Encoding", "gzip").
+			SetBody(gzippedPayload).
 			Post(serverAddr + "/update")
 	}
 }

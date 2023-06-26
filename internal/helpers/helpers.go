@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"bytes"
+	"compress/gzip"
 	"log"
 	"strconv"
 )
@@ -13,4 +15,17 @@ func StrToInt(s string) int {
 	}
 
 	return v
+}
+
+func GzipBytes(b []byte) ([]byte, error) {
+	var resBuf bytes.Buffer
+	gzw := gzip.NewWriter(&resBuf)
+	_, err := gzw.Write(b)
+	gzw.Close()
+
+	if err != nil {
+		return resBuf.Bytes(), err
+	}
+
+	return resBuf.Bytes(), nil
 }
