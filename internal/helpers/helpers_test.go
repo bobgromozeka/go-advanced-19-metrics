@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-func TestGzipBytes(t *testing.T) {
+func TestGzip(t *testing.T) {
 	str := strings.Repeat("Test string", 20)
-	gzippedString, _ := GzipBytes([]byte(str))
+	gzippedString, _ := Gzip([]byte(str))
 
 	gzr, _ := gzip.NewReader(bytes.NewReader(gzippedString))
 	unzippedStr, _ := io.ReadAll(gzr)

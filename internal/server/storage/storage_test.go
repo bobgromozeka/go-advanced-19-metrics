@@ -47,10 +47,10 @@ func TestMemStorage_AddCounter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			if got := s.AddCounter(tt.args.name, tt.args.value); got != tt.want {
 				t.Errorf("AddCounter() = %v, want %v", got, tt.want)
 			}
@@ -79,10 +79,10 @@ func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			if got := s.GetAllCounterMetrics(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAllCounterMetrics() = %v, want %v", got, tt.want)
 			}
@@ -111,10 +111,10 @@ func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			if got := s.GetAllGaugeMetrics(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAllGaugeMetrics() = %v, want %v", got, tt.want)
 			}
@@ -164,10 +164,10 @@ func TestMemStorage_GetCounterMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			gotV, gotOk := s.GetCounterMetrics(tt.args.name)
 			if gotV != tt.wantV {
 				t.Errorf("GetCounterMetrics() gotV = %v, want %v", gotV, tt.wantV)
@@ -221,10 +221,10 @@ func TestMemStorage_GetGaugeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			gotV, gotOk := s.GetGaugeMetrics(tt.args.name)
 			if gotV != tt.wantV {
 				t.Errorf("GetGaugeMetrics() gotV = %v, want %v", gotV, tt.wantV)
@@ -278,10 +278,10 @@ func TestMemStorage_SetGauge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := MemStorage{
-				gaugeMetrics:   tt.fields.gaugeMetrics,
-				counterMetrics: tt.fields.counterMetrics,
-			}
+			s := New()
+			s.Metrics.gauge = tt.fields.gaugeMetrics
+			s.Metrics.counter = tt.fields.counterMetrics
+
 			if got := s.SetGauge(tt.args.name, tt.args.value); got != tt.want {
 				t.Errorf("SetGauge() = %v, want %v", got, tt.want)
 			}

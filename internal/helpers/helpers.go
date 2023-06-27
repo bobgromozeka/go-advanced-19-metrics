@@ -17,7 +17,7 @@ func StrToInt(s string) int {
 	return v
 }
 
-func GzipBytes(b []byte) ([]byte, error) {
+func Gzip(b []byte) ([]byte, error) {
 	var resBuf bytes.Buffer
 	gzw := gzip.NewWriter(&resBuf)
 	_, err := gzw.Write(b)

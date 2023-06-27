@@ -3,10 +3,11 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bobgromozeka/metrics/internal/helpers"
-	"github.com/bobgromozeka/metrics/internal/metrics"
 	"log"
 	"reflect"
+
+	"github.com/bobgromozeka/metrics/internal/helpers"
+	"github.com/bobgromozeka/metrics/internal/metrics"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -22,7 +23,7 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 			log.Println("Could not encode request: ", err)
 			continue
 		}
-		gzippedPayload, gzErr := helpers.GzipBytes(encodedPayload)
+		gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
 		if gzErr != nil {
 			log.Println("Could not gzip request: ", gzErr)
 			continue
