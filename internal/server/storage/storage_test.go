@@ -1,30 +1,27 @@
 package storage
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 func TestMemStorage_AddCounter(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	type args struct {
 		name  string
 		value int64
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		args   args
 		want   int64
 	}{
 		{
 			name: "Adds counter to existing metrics",
-			fields: fields{
-				gaugeMetrics:   map[string]float64{},
-				counterMetrics: CounterMetrics{"a": 5},
+			fields: Metrics{
+				Gauge:   map[string]float64{},
+				Counter: CounterMetrics{"a": 5},
 			},
 			args: args{
 				name:  "a",
@@ -34,9 +31,9 @@ func TestMemStorage_AddCounter(t *testing.T) {
 		},
 		{
 			name: "Adds counter to non-existing metrics",
-			fields: fields{
-				gaugeMetrics:   map[string]float64{},
-				counterMetrics: CounterMetrics{"a": 5},
+			fields: Metrics{
+				Gauge:   map[string]float64{},
+				Counter: CounterMetrics{"a": 5},
 			},
 			args: args{
 				name:  "b",
@@ -48,10 +45,10 @@ func TestMemStorage_AddCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			if got := s.AddCounter(tt.args.name, tt.args.value); got != tt.want {
+				fmt.Println(s.GetAllCounterMetrics())
 				t.Errorf("AddCounter() = %v, want %v", got, tt.want)
 			}
 		})
@@ -59,20 +56,16 @@ func TestMemStorage_AddCounter(t *testing.T) {
 }
 
 func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		want   CounterMetrics
 	}{
 		{
 			name: "Can get all metrics",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{"a": 1.11},
-				counterMetrics: CounterMetrics{"b": 123},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{"a": 1.11},
+				Counter: CounterMetrics{"b": 123},
 			},
 			want: CounterMetrics{"b": 123},
 		},
@@ -80,8 +73,7 @@ func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			if got := s.GetAllCounterMetrics(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAllCounterMetrics() = %v, want %v", got, tt.want)
@@ -91,20 +83,16 @@ func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 }
 
 func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		want   GaugeMetrics
 	}{
 		{
 			name: "Can get all metrics",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{"a": 1.11},
-				counterMetrics: CounterMetrics{"b": 123},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{"a": 1.11},
+				Counter: CounterMetrics{"b": 123},
 			},
 			want: GaugeMetrics{"a": 1.11},
 		},
@@ -112,8 +100,7 @@ func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			if got := s.GetAllGaugeMetrics(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAllGaugeMetrics() = %v, want %v", got, tt.want)
@@ -123,25 +110,21 @@ func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 }
 
 func TestMemStorage_GetCounterMetrics(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	type args struct {
 		name string
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		args   args
 		wantV  int64
 		wantOk bool
 	}{
 		{
 			name: "Can get metrics when exists",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{},
-				counterMetrics: CounterMetrics{"a": 1234},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{},
+				Counter: CounterMetrics{"a": 1234},
 			},
 			args: args{
 				name: "a",
@@ -151,9 +134,9 @@ func TestMemStorage_GetCounterMetrics(t *testing.T) {
 		},
 		{
 			name: "Can't get metrics when exists",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{},
-				counterMetrics: CounterMetrics{"a": 1234},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{},
+				Counter: CounterMetrics{"a": 1234},
 			},
 			args: args{
 				name: "b",
@@ -165,8 +148,7 @@ func TestMemStorage_GetCounterMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			gotV, gotOk := s.GetCounterMetrics(tt.args.name)
 			if gotV != tt.wantV {
@@ -180,25 +162,21 @@ func TestMemStorage_GetCounterMetrics(t *testing.T) {
 }
 
 func TestMemStorage_GetGaugeMetrics(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	type args struct {
 		name string
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		args   args
 		wantV  float64
 		wantOk bool
 	}{
 		{
 			name: "Can get metrics when exists",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{"a": 1234.123},
-				counterMetrics: CounterMetrics{},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{"a": 1234.123},
+				Counter: CounterMetrics{},
 			},
 			args: args{
 				name: "a",
@@ -208,9 +186,9 @@ func TestMemStorage_GetGaugeMetrics(t *testing.T) {
 		},
 		{
 			name: "Can't get metrics when exists",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{"a": 1234.123},
-				counterMetrics: CounterMetrics{},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{"a": 1234.123},
+				Counter: CounterMetrics{},
 			},
 			args: args{
 				name: "b",
@@ -222,8 +200,7 @@ func TestMemStorage_GetGaugeMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			gotV, gotOk := s.GetGaugeMetrics(tt.args.name)
 			if gotV != tt.wantV {
@@ -237,25 +214,21 @@ func TestMemStorage_GetGaugeMetrics(t *testing.T) {
 }
 
 func TestMemStorage_SetGauge(t *testing.T) {
-	type fields struct {
-		gaugeMetrics   GaugeMetrics
-		counterMetrics CounterMetrics
-	}
 	type args struct {
 		name  string
 		value float64
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Metrics
 		args   args
 		want   float64
 	}{
 		{
 			name: "Sets gauge to existing metrics",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{"a": 1.11},
-				counterMetrics: CounterMetrics{"a": 5},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{"a": 1.11},
+				Counter: CounterMetrics{"a": 5},
 			},
 			args: args{
 				name:  "a",
@@ -265,9 +238,9 @@ func TestMemStorage_SetGauge(t *testing.T) {
 		},
 		{
 			name: "Sets gauge to non-existing metrics",
-			fields: fields{
-				gaugeMetrics:   GaugeMetrics{},
-				counterMetrics: CounterMetrics{"a": 5},
+			fields: Metrics{
+				Gauge:   GaugeMetrics{},
+				Counter: CounterMetrics{"a": 5},
 			},
 			args: args{
 				name:  "b",
@@ -279,8 +252,7 @@ func TestMemStorage_SetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New()
-			s.Metrics.gauge = tt.fields.gaugeMetrics
-			s.Metrics.counter = tt.fields.counterMetrics
+			s.SetMetrics(tt.fields)
 
 			if got := s.SetGauge(tt.args.name, tt.args.value); got != tt.want {
 				t.Errorf("SetGauge() = %v, want %v", got, tt.want)

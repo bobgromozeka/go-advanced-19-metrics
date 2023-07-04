@@ -5,12 +5,11 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/bobgromozeka/metrics/internal/server"
 )
 
-var serverAddr string
-var storeInterval uint
-var fileStoragePath string
-var restore bool
+var startupConfig server.StartupConfig
 
 const (
 	Address         = "ADDRESS"
@@ -20,17 +19,17 @@ const (
 )
 
 func parseFlags() {
-	flag.StringVar(&serverAddr, "a", ":8080", "address and port to run server")
-	flag.UintVar(&storeInterval, "i", 300, "Interval of storing metrics to file")
-	flag.StringVar(&fileStoragePath, "f", "/tmp/metrics-db.json", "Metrics file storage path")
-	flag.BoolVar(&restore, "r", true, "Restore metrics from file on server start or not")
+	flag.StringVar(&startupConfig.ServerAddr, "a", ":8080", "address and port to run server")
+	flag.UintVar(&startupConfig.StoreInterval, "i", 300, "Interval of storing metrics to file")
+	flag.StringVar(&startupConfig.FileStoragePath, "f", "/tmp/metrics-db.json", "Metrics file storage path")
+	flag.BoolVar(&startupConfig.Restore, "r", true, "Restore metrics from file on server start or not")
 
 	flag.Parse()
 }
 
 func parseEnv() {
 	if addr := os.Getenv(Address); addr != "" {
-		serverAddr = addr
+		startupConfig.ServerAddr = addr
 	}
 	if interval := os.Getenv(StoreInterval); interval != "" {
 		parsedInterval, err := strconv.Atoi(interval)
@@ -40,13 +39,13 @@ func parseEnv() {
 		if parsedInterval < 0 {
 			log.Fatalln(StoreInterval + " must be greater or equal 0")
 		}
-		storeInterval = uint(parsedInterval)
+		startupConfig.StoreInterval = uint(parsedInterval)
 	}
 	if path := os.Getenv(FileStoragePath); path != "" {
-		fileStoragePath = path
+		startupConfig.FileStoragePath = path
 	}
 	if r := os.Getenv(Restore); r == "false" || r == "0" {
-		restore = false
+		startupConfig.Restore = false
 	}
 }
 

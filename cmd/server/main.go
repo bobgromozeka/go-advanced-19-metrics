@@ -9,11 +9,7 @@ import (
 func main() {
 	setupConfiguration()
 
-	err := server.Start(serverAddr, server.FileStorageSettings{
-		Path:     fileStoragePath,
-		Interval: storeInterval,
-		Restore:  restore,
-	})
+	err := server.Start(startupConfig)
 
 	if err != nil {
 		fmt.Println("Error during server start: ", err)

@@ -1,74 +1,44 @@
 package middlewares
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/bobgromozeka/metrics/internal/log"
 
 	"go.uber.org/zap"
 )
 
-var logger = zap.NewNop()
-var logPath = "./http.log"
-
-type (
-	responseData struct {
-		statusCode int
-		contentLen int
+func WithLogging(logPaths []string) func(handler http.Handler) http.Handler {
+	if len(logPaths) < 1 {
+		fmt.Println("No log paths specified, skipping WithLogging middleware")
+		return func(f http.Handler) http.Handler {
+			return f
+		}
 	}
 
-	logResponseWriter struct {
-		*responseData
-		http.ResponseWriter
+	logger := log.NewLogger(logPaths)
+	return func(next http.Handler) http.Handler {
+		return loggingHandler(next, logger)
 	}
-)
-
-func (l logResponseWriter) Write(b []byte) (int, error) {
-	contentLen, err := l.ResponseWriter.Write(b)
-	l.responseData.contentLen = contentLen
-
-	return contentLen, err
 }
 
-func (l logResponseWriter) WriteHeader(statusCode int) {
-	l.responseData.statusCode = statusCode
-	l.ResponseWriter.WriteHeader(statusCode)
-}
-
-func init() {
-	cfg := zap.NewProductionConfig()
-
-	cfg.OutputPaths = []string{
-		logPath,
-	}
-
-	zlogger, err := cfg.Build()
-	if err != nil {
-		log.Fatalln("Could not create http logger: ", err)
-	}
-
-	logger = zlogger
-}
-
-func WithLogging(f http.Handler) http.Handler {
+func loggingHandler(next http.Handler, logger *zap.Logger) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		timeStart := time.Now()
 
-		rd := responseData{}
-		lw := logResponseWriter{
-			&rd,
-			w,
-		}
+		lw := log.NewResponseWriter(w)
 
-		f.ServeHTTP(lw, r)
+		next.ServeHTTP(lw, r)
 		requestTime := time.Since(timeStart)
 
 		logger.Info("Got request",
 			zap.String("method", r.Method),
 			zap.String("endpoint", r.URL.Path),
 			zap.Duration("duration", requestTime),
-			zap.Int("status code", rd.statusCode),
-			zap.Int("content length", rd.contentLen),
+			zap.Int("status code", lw.GetStatusCode()),
+			zap.Int("content length", lw.GetContentLen()),
 		)
 	}
 
