@@ -45,7 +45,7 @@ func Start(startupConfig StartupConfig) error {
 			Interval: startupConfig.StoreInterval,
 			Restore:  startupConfig.Restore,
 		},
-	)(s)
+	)
 
 	server := new(s)
 
