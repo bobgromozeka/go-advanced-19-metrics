@@ -1,9 +1,12 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 
+	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
 
 	"github.com/go-resty/resty/v2"
@@ -11,44 +14,80 @@ import (
 
 func reportToServer(serverAddr string, rm runtimeMetrics) {
 
-	signatures := makeEndpointsFromStructure(rm)
+	payloads := makeBodiesFromStructure(rm)
 
 	client := resty.New()
-	for _, signature := range signatures {
-		_, _ = client.R().Post(serverAddr + signature)
+	for _, payload := range payloads {
+		encodedPayload, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("Could not encode request: ", err)
+			continue
+		}
+		gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
+		if gzErr != nil {
+			log.Println("Could not gzip request: ", gzErr)
+			continue
+		}
+		_, _ = client.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Encoding", "gzip").
+			SetBody(gzippedPayload).
+			Post(serverAddr + "/update")
 	}
 }
 
-func makeEndpointsFromStructure(rm any) []string {
+func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 	v := reflect.ValueOf(rm)
 	t := reflect.TypeOf(rm)
 
-	var signatures []string
+	var payloads []metrics.RequestPayload
 
 	if v.Kind() == reflect.Struct {
 		for i := 0; i < v.NumField(); i++ {
-			var metricsValue string
 			fieldV := v.Field(i)
 			fieldT := t.Field(i)
-			switch fieldV.Kind() {
-			case reflect.Uint64, reflect.Uint32:
-				metricsValue = fmt.Sprintf("%d", fieldV.Interface())
-			case reflect.Float64:
-				metricsValue = fmt.Sprintf("%f", fieldV.Interface())
+			if payload := makeBodyFromStructField(fieldV, fieldT); payload != nil {
+				payloads = append(payloads, *payload)
 			}
-
-			if len(metricsValue) < 1 {
-				continue
-			}
-
-			metricsType := metrics.GaugeType
-			if mt, ok := runtimeMetricsTypes[fieldT.Name]; ok {
-				metricsType = mt
-			}
-
-			signatures = append(signatures, fmt.Sprintf("/update/%s/%s/%s", metricsType, fieldT.Name, metricsValue))
 		}
 	}
 
-	return signatures
+	return payloads
+}
+
+func makeBodyFromStructField(v reflect.Value, t reflect.StructField) *metrics.RequestPayload {
+	metricsType := metrics.GaugeType
+	if mt, ok := runtimeMetricsTypes[t.Name]; ok {
+		metricsType = mt
+	}
+
+	rp := metrics.RequestPayload{
+		ID:    t.Name,
+		MType: metricsType,
+	}
+
+	//Shit conversions, but we lose accuracy anyway converting uint64 to float64
+	switch metricsType {
+	case metrics.GaugeType:
+		switch val := v.Interface().(type) {
+		case float64:
+			rp.Value = &val
+		case uint64, uint32:
+			strVal := fmt.Sprintf("%d", v.Interface())
+			intVal := helpers.StrToInt(strVal)
+			fVal := float64(intVal)
+			rp.Value = &fVal
+		}
+	case metrics.CounterType:
+		strVal := fmt.Sprintf("%d", v.Interface())
+		intVal := helpers.StrToInt(strVal)
+		val := int64(intVal)
+		rp.Delta = &val
+	}
+
+	if rp.Value == nil && rp.Delta == nil {
+		return nil
+	}
+
+	return &rp
 }

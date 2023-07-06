@@ -9,7 +9,7 @@ import (
 func main() {
 	setupConfiguration()
 
-	err := server.Start(serverAddr)
+	err := server.Start(startupConfig)
 
 	if err != nil {
 		fmt.Println("Error during server start: ", err)

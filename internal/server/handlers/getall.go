@@ -22,6 +22,8 @@ func GetAll(s storage.Storage) http.HandlerFunc {
 			response += fmt.Sprintf("%s:   %d\n", k, v)
 		}
 
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(response))
 	}
 }
