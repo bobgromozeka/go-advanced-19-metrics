@@ -20,37 +20,35 @@ type PersistentStorage struct {
 	syncPersisting  bool
 }
 
-func WithPersistence(config PersistenceSettings) func(Storage) Storage {
-	return func(storage Storage) Storage {
-		ps := &PersistentStorage{
-			Storage:         storage,
-			persistencePath: config.Path,
-		}
-
-		if config.Path != "" {
-			if config.Restore {
-				data, restoreErr := restoreFrom(config.Path)
-				if restoreErr != nil {
-					log.Println("Could not restore data from file: ", restoreErr)
-				} else {
-					ps.SetMetrics(data)
-				}
-			}
-
-			if config.Interval == 0 {
-				ps.syncPersisting = true
-			} else {
-				go func() {
-					ticker := time.Tick(time.Second * time.Duration(config.Interval))
-					for range ticker {
-						ps.persist()
-					}
-				}()
-			}
-		}
-
-		return ps
+func NewPersistenceStorage(s Storage, config PersistenceSettings) Storage {
+	ps := &PersistentStorage{
+		Storage:         s,
+		persistencePath: config.Path,
 	}
+
+	if config.Path != "" {
+		if config.Restore {
+			data, restoreErr := restoreFrom(config.Path)
+			if restoreErr != nil {
+				log.Println("Could not restore data from file: ", restoreErr)
+			} else {
+				ps.SetMetrics(data)
+			}
+		}
+
+		if config.Interval == 0 {
+			ps.syncPersisting = true
+		} else {
+			go func() {
+				ticker := time.Tick(time.Second * time.Duration(config.Interval))
+				for range ticker {
+					ps.persist()
+				}
+			}()
+		}
+	}
+
+	return ps
 }
 
 func (s *PersistentStorage) SetGauge(name string, value float64) float64 {
@@ -74,10 +72,12 @@ func (s *PersistentStorage) AddCounter(name string, value int64) int64 {
 }
 
 func (s *PersistentStorage) persist() {
-	err := persistToPath(s.persistencePath, Metrics{
-		Gauge:   s.GetAllGaugeMetrics(),
-		Counter: s.GetAllCounterMetrics(),
-	})
+	err := persistToPath(
+		s.persistencePath, Metrics{
+			Gauge:   s.GetAllGaugeMetrics(),
+			Counter: s.GetAllCounterMetrics(),
+		},
+	)
 	if err != nil {
 		fmt.Println("Error during syncing storage data: ", err)
 	}

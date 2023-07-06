@@ -16,30 +16,36 @@ func new(s storage.Storage) *chi.Mux {
 
 	r.Use(middleware.StripSlashes)
 
-	r.Group(func(r chi.Router) {
-		r.Use(
-			middlewares.WithLogging([]string{
-				"./http.log",
-			}),
-			middlewares.Gzippify,
-		)
-		r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
-		r.Get("/value/{type}/{name}", handlers.Get(s))
-		r.Post("/update", handlers.UpdateJSON(s))
-		r.Post("/value", handlers.GetJSON(s))
-		r.Get("/", handlers.GetAll(s))
-	})
+	r.Group(
+		func(r chi.Router) {
+			r.Use(
+				middlewares.WithLogging(
+					[]string{
+						"./http.log",
+					},
+				),
+				middlewares.Gzippify,
+			)
+			r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
+			r.Get("/value/{type}/{name}", handlers.Get(s))
+			r.Post("/update", handlers.UpdateJSON(s))
+			r.Post("/value", handlers.GetJSON(s))
+			r.Get("/", handlers.GetAll(s))
+		},
+	)
 
 	return r
 }
 
 func Start(startupConfig StartupConfig) error {
 	s := storage.New()
-	s = storage.WithPersistence(storage.PersistenceSettings{
-		Path:     startupConfig.FileStoragePath,
-		Interval: startupConfig.StoreInterval,
-		Restore:  startupConfig.Restore,
-	})(s)
+	s = storage.NewPersistenceStorage(
+		s, storage.PersistenceSettings{
+			Path:     startupConfig.FileStoragePath,
+			Interval: startupConfig.StoreInterval,
+			Restore:  startupConfig.Restore,
+		},
+	)(s)
 
 	server := new(s)
 
