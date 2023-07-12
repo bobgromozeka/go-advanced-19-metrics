@@ -40,15 +40,29 @@ func new(s storage.Storage) *chi.Mux {
 }
 
 func Start(startupConfig StartupConfig) error {
-	db.Connect(startupConfig.DatabaseDsn)
-	s := storage.New()
-	s = storage.NewPersistenceStorage(
-		s, storage.PersistenceSettings{
-			Path:     startupConfig.FileStoragePath,
-			Interval: startupConfig.StoreInterval,
-			Restore:  startupConfig.Restore,
-		},
-	)
+	var s storage.Storage
+
+	if startupConfig.DatabaseDsn != "" {
+		connErr := db.Connect(startupConfig.DatabaseDsn)
+		if connErr != nil {
+			panic(connErr)
+		}
+
+		ddlErr := db.ExecTablesDDL()
+		if ddlErr != nil {
+			panic(ddlErr)
+		}
+		s = storage.NewDB(db.Connection())
+	} else {
+		s = storage.NewMemory()
+		s = storage.NewPersistenceStorage(
+			s, storage.PersistenceSettings{
+				Path:     startupConfig.FileStoragePath,
+				Interval: startupConfig.StoreInterval,
+				Restore:  startupConfig.Restore,
+			},
+		)
+	}
 
 	server := new(s)
 
