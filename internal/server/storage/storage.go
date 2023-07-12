@@ -5,8 +5,8 @@ import (
 	"errors"
 )
 
-var NotFoundError = errors.New("metrics not found")
-var WrongMetricsError = errors.New("wrong metrics type")
+var ErrNotFound = errors.New("metrics not found")
+var ErrWrongMetrics = errors.New("wrong metrics type")
 
 type GaugeMetrics map[string]float64
 type CounterMetrics map[string]int64

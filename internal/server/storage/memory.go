@@ -35,7 +35,7 @@ func (s *MemStorage) GetMetricsByType(ctx context.Context, mtype string, name st
 	case metrics.CounterType:
 		return s.GetCounterMetrics(ctx, name)
 	default:
-		return nil, WrongMetricsError
+		return nil, ErrWrongMetrics
 	}
 }
 
@@ -51,7 +51,7 @@ func (s *MemStorage) GetGaugeMetrics(ctx context.Context, name string) (float64,
 	gm, _ := s.GetAllGaugeMetrics(ctx)
 	v, ok := gm[name]
 	if !ok {
-		return v, NotFoundError
+		return v, ErrNotFound
 	}
 	return v, nil
 }
@@ -60,7 +60,7 @@ func (s *MemStorage) GetCounterMetrics(ctx context.Context, name string) (int64,
 	cm, _ := s.GetAllCounterMetrics(ctx)
 	v, ok := cm[name]
 	if !ok {
-		return v, NotFoundError
+		return v, ErrNotFound
 	}
 	return v, nil
 }

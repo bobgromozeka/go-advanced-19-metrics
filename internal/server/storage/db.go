@@ -25,7 +25,7 @@ func (s *DBStorage) GetMetricsByType(ctx context.Context, mtype string, name str
 	case metrics.CounterType:
 		return s.GetCounterMetrics(ctx, name)
 	default:
-		return nil, WrongMetricsError
+		return nil, ErrWrongMetrics
 	}
 }
 
@@ -90,7 +90,7 @@ func (s *DBStorage) GetGaugeMetrics(ctx context.Context, name string) (float64, 
 
 	err := row.Scan(&val)
 	if err != nil && err == pgx.ErrNoRows {
-		return val, NotFoundError
+		return val, ErrNotFound
 	}
 
 	return val, nil
@@ -103,7 +103,7 @@ func (s *DBStorage) GetCounterMetrics(ctx context.Context, name string) (int64, 
 
 	err := row.Scan(&val)
 	if err != nil && err == pgx.ErrNoRows {
-		return val, NotFoundError
+		return val, ErrNotFound
 	}
 
 	return val, nil
