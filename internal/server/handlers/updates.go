@@ -53,11 +53,7 @@ func metricsArrToMaps(arr []metrics.RequestPayload) storage.Metrics {
 				delta = *payload.Delta
 			}
 
-			if _, ok := m.Counter[payload.ID]; ok {
-				m.Counter[payload.ID] += delta
-			} else {
-				m.Counter[payload.ID] = delta
-			}
+			m.Counter[payload.ID] += delta
 		} else if payload.MType == metrics.GaugeType {
 			var value float64
 			if payload.Value == nil {
