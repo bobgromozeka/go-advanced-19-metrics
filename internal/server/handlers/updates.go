@@ -30,6 +30,7 @@ func Updates(s storage.Storage) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success":true}`))
 	}
 }
 
@@ -51,7 +52,12 @@ func metricsArrToMaps(arr []metrics.RequestPayload) storage.Metrics {
 			} else {
 				delta = *payload.Delta
 			}
-			m.Counter[payload.ID] = delta
+
+			if _, ok := m.Counter[payload.ID]; ok {
+				m.Counter[payload.ID] += delta
+			} else {
+				m.Counter[payload.ID] = delta
+			}
 		} else if payload.MType == metrics.GaugeType {
 			var value float64
 			if payload.Value == nil {
