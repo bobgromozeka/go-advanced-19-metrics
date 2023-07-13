@@ -103,3 +103,27 @@ func (s *MemStorage) UpdateMetricsByType(ctx context.Context, metricsType string
 		return false, nil
 	}
 }
+
+func (s *MemStorage) AddCounters(ctx context.Context, data CounterMetrics) error {
+	for key, val := range data {
+		_, err := s.AddCounter(ctx, key, val)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *MemStorage) SetGauges(ctx context.Context, data GaugeMetrics) error {
+	for key, val := range data {
+		_, err := s.SetGauge(ctx, key, val)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

@@ -3,10 +3,16 @@ package storage
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/bobgromozeka/metrics/internal/metrics"
 
 	"github.com/jackc/pgx/v5"
 )
+
+type Execer interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
 
 type DBStorage struct {
 	*pgx.Conn
@@ -36,6 +42,7 @@ func (s *DBStorage) GetAllGaugeMetrics(ctx context.Context) (GaugeMetrics, error
 	if rowsErr != nil {
 		return gm, rowsErr
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var name string
@@ -110,12 +117,7 @@ func (s *DBStorage) GetCounterMetrics(ctx context.Context, name string) (int64, 
 }
 
 func (s *DBStorage) AddCounter(ctx context.Context, name string, value int64) (int64, error) {
-	_, err := s.Conn.Exec(
-		ctx,
-		`insert into counters (name, value) values($1, $2) on conflict (name) do update  
-			set value = (counters.value + $2)`,
-		name, value,
-	)
+	err := addCounter(ctx, s.Conn, name, value)
 	if err != nil {
 		return 0, err
 	}
@@ -158,4 +160,99 @@ func (s *DBStorage) UpdateMetricsByType(ctx context.Context, metricsType string,
 
 func (s *DBStorage) SetMetrics(ctx context.Context, m Metrics) {
 	//noop
+}
+
+func Bootstrap(db *pgx.Conn) error {
+	ctx := context.Background()
+	tx, txErr := db.Begin(ctx)
+	if txErr != nil {
+		return txErr
+	}
+	defer tx.Rollback(ctx)
+
+	_, gaugeErr := tx.Exec(
+		context.Background(),
+		`create table if not exists gauges(
+    			name varchar(255) not null,
+    			value double precision,
+    			primary key (name)
+    			)`,
+	)
+	if gaugeErr != nil {
+		return gaugeErr
+	}
+
+	_, counterErr := tx.Exec(
+		context.Background(),
+		`create table if not exists counters(
+    			name varchar(255) not null,
+    			value bigint,
+    			primary key (name)
+    			)`,
+	)
+	if counterErr != nil {
+		return counterErr
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (s *DBStorage) AddCounters(ctx context.Context, data CounterMetrics) error {
+	tx, txErr := s.Conn.Begin(ctx)
+	if txErr != nil {
+		return txErr
+	}
+
+	defer tx.Rollback(ctx)
+
+	for key, val := range data {
+		upsertErr := addCounter(ctx, tx, key, val)
+
+		if upsertErr != nil {
+			return upsertErr
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (s *DBStorage) SetGauges(ctx context.Context, data GaugeMetrics) error {
+	tx, txErr := s.Conn.Begin(ctx)
+	if txErr != nil {
+		return txErr
+	}
+
+	defer tx.Rollback(ctx)
+
+	for key, val := range data {
+		upsertErr := setGauge(ctx, tx, key, val)
+
+		if upsertErr != nil {
+			return upsertErr
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func addCounter(ctx context.Context, conn Execer, name string, value int64) error {
+	_, err := conn.Exec(
+		ctx,
+		`insert into counters (name, value) values($1, $2) on conflict (name) do update  
+			set value = (counters.value + $2)`,
+		name, value,
+	)
+
+	return err
+}
+
+func setGauge(ctx context.Context, conn Execer, name string, value float64) error {
+	_, err := conn.Exec(
+		ctx,
+		`insert into gauges (name, value) values($1, $2) on conflict (name) do update  
+			set value = $2`,
+		name, value,
+	)
+
+	return err
 }

@@ -30,6 +30,7 @@ func new(s storage.Storage) *chi.Mux {
 			r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
 			r.Get("/value/{type}/{name}", handlers.Get(s))
 			r.Post("/update", handlers.UpdateJSON(s))
+			r.Post("/updates", handlers.Updates(s))
 			r.Post("/value", handlers.GetJSON(s))
 			r.Get("/", handlers.GetAll(s))
 		},
@@ -48,7 +49,7 @@ func Start(startupConfig StartupConfig) error {
 			panic(connErr)
 		}
 
-		ddlErr := db.ExecTablesDDL()
+		ddlErr := storage.Bootstrap(db.Connection())
 		if ddlErr != nil {
 			panic(ddlErr)
 		}

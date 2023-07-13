@@ -19,7 +19,9 @@ type PersistenceSettings struct {
 
 type Storage interface {
 	AddCounter(context.Context, string, int64) (int64, error)
+	AddCounters(context.Context, CounterMetrics) error
 	SetGauge(context.Context, string, float64) (float64, error)
+	SetGauges(context.Context, GaugeMetrics) error
 	UpdateMetricsByType(context.Context, string, string, string) (any, error)
 	GetAllGaugeMetrics(context.Context) (GaugeMetrics, error)
 	GetAllCounterMetrics(context.Context) (CounterMetrics, error)
