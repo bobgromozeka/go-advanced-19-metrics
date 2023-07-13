@@ -24,10 +24,6 @@ func NewMemory() Storage {
 	}
 }
 
-func (s *MemStorage) SetMetrics(ctx context.Context, m Metrics) {
-	s.Metrics = m
-}
-
 func (s *MemStorage) GetMetricsByType(ctx context.Context, mtype string, name string) (any, error) {
 	switch mtype {
 	case metrics.GaugeType:

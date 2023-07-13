@@ -158,10 +158,6 @@ func (s *DBStorage) UpdateMetricsByType(ctx context.Context, metricsType string,
 	}
 }
 
-func (s *DBStorage) SetMetrics(ctx context.Context, m Metrics) {
-	//noop
-}
-
 func Bootstrap(db *pgx.Conn) error {
 	ctx := context.Background()
 	tx, txErr := db.Begin(ctx)

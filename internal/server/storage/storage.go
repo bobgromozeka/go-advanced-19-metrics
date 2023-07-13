@@ -28,5 +28,4 @@ type Storage interface {
 	GetGaugeMetrics(context.Context, string) (float64, error)
 	GetCounterMetrics(context.Context, string) (int64, error)
 	GetMetricsByType(context.Context, string, string) (any, error)
-	SetMetrics(context.Context, Metrics)
 }

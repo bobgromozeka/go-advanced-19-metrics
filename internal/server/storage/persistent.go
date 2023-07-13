@@ -27,7 +27,13 @@ func NewPersistenceStorage(s Storage, config PersistenceSettings) Storage {
 			if restoreErr != nil {
 				log.Println("Could not restore data from file: ", restoreErr)
 			} else {
-				ps.SetMetrics(context.Background(), data)
+				if cErr := ps.AddCounters(context.Background(), data.Counter); cErr != nil {
+					log.Println("Could not populate counters with restored data:", cErr)
+				}
+
+				if gErr := ps.SetGauges(context.Background(), data.Gauge); gErr != nil {
+					log.Println("Could not populate gauges with restored data:", gErr)
+				}
 			}
 		}
 
