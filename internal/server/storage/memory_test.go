@@ -50,7 +50,8 @@ func TestMemStorage_AddCounter(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				if got, _ := s.AddCounter(ctx, tt.args.name, tt.args.value); got != tt.want {
 					t.Errorf("AddCounter() = %v, want %v", got, tt.want)
@@ -79,7 +80,8 @@ func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				if got, _ := s.GetAllCounterMetrics(ctx); !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("GetAllCounterMetrics() = %v, want %v", got, tt.want)
@@ -108,7 +110,8 @@ func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				if got, _ := s.GetAllGaugeMetrics(ctx); !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("GetAllGaugeMetrics() = %v, want %v", got, tt.want)
@@ -158,7 +161,8 @@ func TestMemStorage_GetCounterMetrics(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				gotV, err := s.GetCounterMetrics(ctx, tt.args.name)
 				if gotV != tt.wantV {
@@ -214,7 +218,8 @@ func TestMemStorage_GetGaugeMetrics(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				gotV, err := s.GetGaugeMetrics(ctx, tt.args.name)
 				if gotV != tt.wantV {
@@ -270,7 +275,8 @@ func TestMemStorage_SetGauge(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				s := NewMemory()
-				s.SetMetrics(ctx, tt.fields)
+				s.AddCounters(ctx, tt.fields.Counter)
+				s.SetGauges(ctx, tt.fields.Gauge)
 
 				if got, _ := s.SetGauge(ctx, tt.args.name, tt.args.value); got != tt.want {
 					t.Errorf("SetGauge() = %v, want %v", got, tt.want)
