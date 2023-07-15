@@ -39,7 +39,7 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 		return
 	}
 
-	_, err = client.R().
+	_, _ = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
