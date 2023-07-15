@@ -68,7 +68,7 @@ func UpdateJSON(s storage.Storage) http.HandlerFunc {
 			}
 			newValue, err := s.AddCounter(r.Context(), requestMetrics.ID, delta)
 			if err != nil {
-				log.Println(err)
+				log.Println("Could not add counter: ", err)
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
 				return
 			}
@@ -83,7 +83,7 @@ func UpdateJSON(s storage.Storage) http.HandlerFunc {
 			}
 			newValue, err := s.SetGauge(r.Context(), requestMetrics.ID, value)
 			if err != nil {
-				log.Println(err)
+				log.Println("Could not set gauge: ", err)
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
 				return
 			}
