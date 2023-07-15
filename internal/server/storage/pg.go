@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/bobgromozeka/metrics/internal/metrics"
 	"github.com/bobgromozeka/metrics/internal/retrier"
@@ -21,7 +22,7 @@ type DBStorage struct {
 	*pgx.Conn
 }
 
-func NewDB(db *pgx.Conn) Storage {
+func NewPG(db *pgx.Conn) Storage {
 	return &DBStorage{
 		db,
 	}
@@ -45,7 +46,7 @@ func (s *DBStorage) GetAllGaugeMetrics(ctx context.Context) (GaugeMetrics, error
 	var rowsErr error
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -53,11 +54,8 @@ func (s *DBStorage) GetAllGaugeMetrics(ctx context.Context) (GaugeMetrics, error
 	for ret.Try(ctx) {
 		rows, rowsErr = s.Conn.Query(ctx, `select name, value from gauges`)
 
-		if rowsErr != nil {
-			var pgErr *pgconn.PgError
-			if !errors.As(rowsErr, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(rowsErr) {
+			ret.Stop()
 		}
 	}
 
@@ -92,7 +90,7 @@ func (s *DBStorage) GetAllCounterMetrics(ctx context.Context) (CounterMetrics, e
 	var rowsErr error
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -100,11 +98,8 @@ func (s *DBStorage) GetAllCounterMetrics(ctx context.Context) (CounterMetrics, e
 	for ret.Try(ctx) {
 		rows, rowsErr = s.Conn.Query(ctx, `select name, value from counters`)
 
-		if rowsErr != nil {
-			var pgErr *pgconn.PgError
-			if !errors.As(rowsErr, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(rowsErr) {
+			ret.Stop()
 		}
 	}
 
@@ -134,7 +129,7 @@ func (s *DBStorage) GetAllCounterMetrics(ctx context.Context) (CounterMetrics, e
 func (s *DBStorage) GetGaugeMetrics(ctx context.Context, name string) (float64, error) {
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -146,15 +141,12 @@ func (s *DBStorage) GetGaugeMetrics(ctx context.Context, name string) (float64, 
 
 		err := row.Scan(&val)
 
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return val, ErrNotFound
-			}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return val, ErrNotFound
+		}
 
-			var pgErr *pgconn.PgError
-			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(err) {
+			ret.Stop()
 		}
 
 	}
@@ -165,7 +157,7 @@ func (s *DBStorage) GetGaugeMetrics(ctx context.Context, name string) (float64, 
 func (s *DBStorage) GetCounterMetrics(ctx context.Context, name string) (int64, error) {
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -177,15 +169,12 @@ func (s *DBStorage) GetCounterMetrics(ctx context.Context, name string) (int64, 
 
 		err := row.Scan(&val)
 
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return val, ErrNotFound
-			}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return val, ErrNotFound
+		}
 
-			var pgErr *pgconn.PgError
-			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(err) {
+			ret.Stop()
 		}
 
 	}
@@ -306,7 +295,7 @@ func Bootstrap(db *pgx.Conn) error {
 func addCounter(ctx context.Context, conn Execer, name string, value int64) error {
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -321,11 +310,8 @@ func addCounter(ctx context.Context, conn Execer, name string, value int64) erro
 			name, value,
 		)
 
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(err) {
+			ret.Stop()
 		}
 	}
 
@@ -335,7 +321,7 @@ func addCounter(ctx context.Context, conn Execer, name string, value int64) erro
 func setGauge(ctx context.Context, conn Execer, name string, value float64) error {
 	ret := retrier.NewRetrier(
 		retrier.RetrierConfig{
-			InitialWaitTime: 1,
+			InitialWaitTime: time.Second,
 			RetriesCount:    3,
 		},
 	)
@@ -350,13 +336,15 @@ func setGauge(ctx context.Context, conn Execer, name string, value float64) erro
 			name, value,
 		)
 
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
-				ret.Stop()
-			}
+		if !isPostgresConnectionError(err) {
+			ret.Stop()
 		}
 	}
 
 	return err
+}
+
+func isPostgresConnectionError(err error) bool {
+	var pgErr *pgconn.PgError
+	return err != nil && errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code)
 }

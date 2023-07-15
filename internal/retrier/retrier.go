@@ -6,7 +6,7 @@ import (
 )
 
 type RetrierConfig struct {
-	InitialWaitTime      uint
+	InitialWaitTime      time.Duration
 	RetriesCount         uint
 	WaitTimeIncreaseFunc *func(uint) uint
 }
@@ -44,7 +44,7 @@ func (r *Retrier) Try(ctx context.Context) bool {
 
 	if r.currentTry > 0 && r.currentTry != (r.c.RetriesCount+1) && !r.stopped {
 		additionalWaitTime := (*r.c.WaitTimeIncreaseFunc)(r.currentTry - 1)
-		waitTime := time.Second * time.Duration(r.c.InitialWaitTime+additionalWaitTime)
+		waitTime := time.Second*r.c.InitialWaitTime + time.Duration(additionalWaitTime)
 
 		select {
 		case <-time.After(waitTime):

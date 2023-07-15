@@ -53,7 +53,7 @@ func Start(startupConfig StartupConfig) error {
 		if ddlErr != nil {
 			panic(ddlErr)
 		}
-		s = storage.NewDB(db.Connection())
+		s = storage.NewPG(db.Connection())
 	} else {
 		s = storage.NewMemory()
 		s = storage.NewPersistenceStorage(
