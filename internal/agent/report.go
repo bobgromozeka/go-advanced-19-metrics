@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/go-resty/resty/v2"
-
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
+
+	"github.com/go-resty/resty/v2"
 )
 
 func reportToServer(serverAddr string, rm runtimeMetrics) {
