@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 
@@ -25,7 +26,7 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 	//resty client has jitter func to calc wait time between attempts by default (1 + 2^attempt sec)
 	client.
 		SetRetryCount(3).
-		SetRetryWaitTime(1)
+		SetRetryWaitTime(time.Second * 1)
 
 	encodedPayload, err := json.Marshal(payloads)
 	if err != nil {
