@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgconn"
+	"errors"
 
 	"github.com/bobgromozeka/metrics/internal/metrics"
+	"github.com/bobgromozeka/metrics/internal/retrier"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -38,7 +41,26 @@ func (s *DBStorage) GetMetricsByType(ctx context.Context, mtype string, name str
 func (s *DBStorage) GetAllGaugeMetrics(ctx context.Context) (GaugeMetrics, error) {
 	gm := GaugeMetrics{}
 
-	rows, rowsErr := s.Conn.Query(ctx, `select name, value from gauges`)
+	var rows pgx.Rows
+	var rowsErr error
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
+	)
+
+	for ret.Try(ctx) {
+		rows, rowsErr = s.Conn.Query(ctx, `select name, value from gauges`)
+
+		if rowsErr != nil {
+			var pgErr *pgconn.PgError
+			if !errors.As(rowsErr, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+	}
+
 	if rowsErr != nil {
 		return gm, rowsErr
 	}
@@ -66,7 +88,26 @@ func (s *DBStorage) GetAllGaugeMetrics(ctx context.Context) (GaugeMetrics, error
 func (s *DBStorage) GetAllCounterMetrics(ctx context.Context) (CounterMetrics, error) {
 	cm := CounterMetrics{}
 
-	rows, rowsErr := s.Conn.Query(ctx, `select name, value from counters`)
+	var rows pgx.Rows
+	var rowsErr error
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
+	)
+
+	for ret.Try(ctx) {
+		rows, rowsErr = s.Conn.Query(ctx, `select name, value from counters`)
+
+		if rowsErr != nil {
+			var pgErr *pgconn.PgError
+			if !errors.As(rowsErr, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+	}
+
 	if rowsErr != nil {
 		return cm, rowsErr
 	}
@@ -91,26 +132,62 @@ func (s *DBStorage) GetAllCounterMetrics(ctx context.Context) (CounterMetrics, e
 }
 
 func (s *DBStorage) GetGaugeMetrics(ctx context.Context, name string) (float64, error) {
-	row := s.Conn.QueryRow(ctx, `select value from gauges where name = $1`, name)
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
+	)
 
 	var val float64
 
-	err := row.Scan(&val)
-	if err != nil && err == pgx.ErrNoRows {
-		return val, ErrNotFound
+	for ret.Try(ctx) {
+		row := s.Conn.QueryRow(ctx, `select value from gauges where name = $1`, name)
+
+		err := row.Scan(&val)
+
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return val, ErrNotFound
+			}
+
+			var pgErr *pgconn.PgError
+			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+
 	}
 
 	return val, nil
 }
 
 func (s *DBStorage) GetCounterMetrics(ctx context.Context, name string) (int64, error) {
-	row := s.Conn.QueryRow(ctx, `select value from counters where name = $1`, name)
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
+	)
 
 	var val int64
 
-	err := row.Scan(&val)
-	if err != nil && err == pgx.ErrNoRows {
-		return val, ErrNotFound
+	for ret.Try(ctx) {
+		row := s.Conn.QueryRow(ctx, `select value from counters where name = $1`, name)
+
+		err := row.Scan(&val)
+
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return val, ErrNotFound
+			}
+
+			var pgErr *pgconn.PgError
+			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+
 	}
 
 	return val, nil
@@ -126,17 +203,50 @@ func (s *DBStorage) AddCounter(ctx context.Context, name string, value int64) (i
 }
 
 func (s *DBStorage) SetGauge(ctx context.Context, name string, value float64) (float64, error) {
-	_, err := s.Conn.Exec(
-		ctx,
-		`insert into gauges (name, value) values($1, $2) on conflict (name) do update
-		set value = $2`,
-		name, value,
-	)
+	err := setGauge(ctx, s.Conn, name, value)
 	if err != nil {
 		return 0, err
 	}
 
 	return s.GetGaugeMetrics(ctx, name)
+}
+
+func (s *DBStorage) AddCounters(ctx context.Context, data CounterMetrics) error {
+	tx, txErr := s.Conn.Begin(ctx)
+	if txErr != nil {
+		return txErr
+	}
+
+	defer tx.Rollback(ctx)
+
+	for key, val := range data {
+		upsertErr := addCounter(ctx, tx, key, val)
+
+		if upsertErr != nil {
+			return upsertErr
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (s *DBStorage) SetGauges(ctx context.Context, data GaugeMetrics) error {
+	tx, txErr := s.Conn.Begin(ctx)
+	if txErr != nil {
+		return txErr
+	}
+
+	defer tx.Rollback(ctx)
+
+	for key, val := range data {
+		upsertErr := setGauge(ctx, tx, key, val)
+
+		if upsertErr != nil {
+			return upsertErr
+		}
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (s *DBStorage) UpdateMetricsByType(ctx context.Context, metricsType string, name string, value string) (any, error) {
@@ -193,62 +303,60 @@ func Bootstrap(db *pgx.Conn) error {
 	return tx.Commit(ctx)
 }
 
-func (s *DBStorage) AddCounters(ctx context.Context, data CounterMetrics) error {
-	tx, txErr := s.Conn.Begin(ctx)
-	if txErr != nil {
-		return txErr
-	}
-
-	defer tx.Rollback(ctx)
-
-	for key, val := range data {
-		upsertErr := addCounter(ctx, tx, key, val)
-
-		if upsertErr != nil {
-			return upsertErr
-		}
-	}
-
-	return tx.Commit(ctx)
-}
-
-func (s *DBStorage) SetGauges(ctx context.Context, data GaugeMetrics) error {
-	tx, txErr := s.Conn.Begin(ctx)
-	if txErr != nil {
-		return txErr
-	}
-
-	defer tx.Rollback(ctx)
-
-	for key, val := range data {
-		upsertErr := setGauge(ctx, tx, key, val)
-
-		if upsertErr != nil {
-			return upsertErr
-		}
-	}
-
-	return tx.Commit(ctx)
-}
-
 func addCounter(ctx context.Context, conn Execer, name string, value int64) error {
-	_, err := conn.Exec(
-		ctx,
-		`insert into counters (name, value) values($1, $2) on conflict (name) do update  
-			set value = (counters.value + $2)`,
-		name, value,
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
 	)
+
+	var err error
+
+	for ret.Try(ctx) {
+		_, err = conn.Exec(
+			ctx,
+			`insert into counters (name, value) values($1, $2) on conflict (name) do update  
+			set value = (counters.value + $2)`,
+			name, value,
+		)
+
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+	}
 
 	return err
 }
 
 func setGauge(ctx context.Context, conn Execer, name string, value float64) error {
-	_, err := conn.Exec(
-		ctx,
-		`insert into gauges (name, value) values($1, $2) on conflict (name) do update  
-			set value = $2`,
-		name, value,
+	ret := retrier.NewRetrier(
+		retrier.RetrierConfig{
+			InitialWaitTime: 1,
+			RetriesCount:    3,
+		},
 	)
+
+	var err error
+
+	for ret.Try(ctx) {
+		_, err = conn.Exec(
+			ctx,
+			`insert into gauges (name, value) values($1, $2) on conflict (name) do update  
+			set value = $2`,
+			name, value,
+		)
+
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if !errors.As(err, &pgErr) || !pgerrcode.IsConnectionException(pgErr.Code) {
+				ret.Stop()
+			}
+		}
+	}
 
 	return err
 }
