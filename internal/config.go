@@ -1,3 +1,3 @@
 package internal
 
-const HttpCheckSumHeader = "HashSHA256"
+const HTTPCheckSumHeader = "HashSHA256"

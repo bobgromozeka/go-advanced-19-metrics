@@ -22,13 +22,13 @@ func Updates(s storage.Storage, hashKey string) http.HandlerFunc {
 			return
 		}
 
-		if sum := r.Header.Get(internal.HttpCheckSumHeader); sum != "" && !hash.IsValidSum(sum, string(body), hashKey) {
+		if sum := r.Header.Get(internal.HTTPCheckSumHeader); sum != "" && !hash.IsValidSum(sum, string(body), hashKey) {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 
 		if jsonErr := json.Unmarshal(body, &requestMetrics); jsonErr != nil {
-			http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "Bad request: "+jsonErr.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -44,7 +44,7 @@ func Updates(s storage.Storage, hashKey string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		responseBody := []byte(`{"success":true}`)
-		helpers.SignResponse(w, responseBody, hashKey, internal.HttpCheckSumHeader)
+		helpers.SignResponse(w, responseBody, hashKey, internal.HTTPCheckSumHeader)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseBody)

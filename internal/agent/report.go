@@ -37,7 +37,7 @@ func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
 
 	signature := hash.Sign(hashKey, encodedPayload)
 	if signature != "" {
-		client.SetHeader(internal.HttpCheckSumHeader, signature)
+		client.SetHeader(internal.HTTPCheckSumHeader, signature)
 	}
 
 	gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
