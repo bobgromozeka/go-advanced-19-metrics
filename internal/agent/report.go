@@ -7,13 +7,15 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
+	"github.com/bobgromozeka/metrics/internal"
+	"github.com/bobgromozeka/metrics/internal/hash"
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
-
-	"github.com/go-resty/resty/v2"
 )
 
-func reportToServer(serverAddr string, rm runtimeMetrics) {
+func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
 
 	payloads := makeBodiesFromStructure(rm)
 
@@ -21,10 +23,9 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 		return
 	}
 
-	client := resty.New()
-
 	//resty client has jitter func to calc wait time between attempts by default (1 + 2^attempt sec)
-	client.
+	client := resty.
+		New().
 		SetRetryCount(3).
 		SetRetryWaitTime(time.Second * 1)
 
@@ -32,6 +33,11 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 	if err != nil {
 		log.Println("Could not encode request: ", err)
 		return
+	}
+
+	signature := hash.Sign(hashKey, encodedPayload)
+	if signature != "" {
+		client.SetHeader(internal.HttpCheckSumHeader, signature)
 	}
 
 	gzippedPayload, gzErr := helpers.Gzip(encodedPayload)

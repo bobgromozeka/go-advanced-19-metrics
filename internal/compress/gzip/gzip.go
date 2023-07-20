@@ -22,9 +22,6 @@ func (gzw *Writer) Write(p []byte) (int, error) {
 }
 
 func (gzw *Writer) WriteHeader(statusCode int) {
-	if statusCode < 300 {
-		gzw.w.Header().Set("Content-Encoding", Name)
-	}
 	gzw.w.WriteHeader(statusCode)
 }
 
