@@ -3,13 +3,13 @@ package server
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/bobgromozeka/metrics/internal/server/db"
 	"github.com/bobgromozeka/metrics/internal/server/handlers"
 	"github.com/bobgromozeka/metrics/internal/server/middlewares"
 	"github.com/bobgromozeka/metrics/internal/server/storage"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 func new(s storage.Storage, config StartupConfig) *chi.Mux {
