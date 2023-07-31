@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -64,8 +65,17 @@ func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 		for i := 0; i < v.NumField(); i++ {
 			fieldV := v.Field(i)
 			fieldT := t.Field(i)
-			if payload := makeBodyFromStructField(fieldV, fieldT); payload != nil {
-				payloads = append(payloads, *payload)
+			if fieldV.Kind() == reflect.Slice {
+				for j := 0; j < fieldV.Len(); j++ {
+					sliceElV := fieldV.Index(j)
+					if payload := makeBodyFromStructField(sliceElV, fieldT.Name+strconv.Itoa(j)); payload != nil {
+						payloads = append(payloads, *payload)
+					}
+				}
+			} else {
+				if payload := makeBodyFromStructField(fieldV, fieldT.Name); payload != nil {
+					payloads = append(payloads, *payload)
+				}
 			}
 		}
 	}
@@ -73,14 +83,14 @@ func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 	return payloads
 }
 
-func makeBodyFromStructField(v reflect.Value, t reflect.StructField) *metrics.RequestPayload {
+func makeBodyFromStructField(v reflect.Value, name string) *metrics.RequestPayload {
 	metricsType := metrics.GaugeType
-	if mt, ok := runtimeMetricsTypes[t.Name]; ok {
+	if mt, ok := runtimeMetricsTypes[name]; ok {
 		metricsType = mt
 	}
 
 	rp := metrics.RequestPayload{
-		ID:    t.Name,
+		ID:    name,
 		MType: metricsType,
 	}
 
