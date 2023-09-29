@@ -15,6 +15,7 @@ const (
 	Address        = "ADDRESS"
 	ReportInterval = "REPORT_INTERVAL"
 	PollInterval   = "POLL_INTERVAL"
+	Key            = "KEY"
 )
 
 func parseFlags() {
@@ -22,6 +23,7 @@ func parseFlags() {
 	flag.StringVar(&startupConfig.ServerScheme, "s", "http", "server scheme (http, https)")
 	flag.IntVar(&startupConfig.PollInterval, "p", 2, "Metrics polling interval")
 	flag.IntVar(&startupConfig.ReportInterval, "r", 10, "Metrics reporting interval to server")
+	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to make request signature")
 
 	flag.Parse()
 }
@@ -47,6 +49,10 @@ func parseEnv() {
 		}
 
 		startupConfig.PollInterval = parsedPi
+	}
+
+	if key := os.Getenv(Key); key != "" {
+		startupConfig.HashKey = key
 	}
 }
 

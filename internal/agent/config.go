@@ -5,4 +5,5 @@ type StartupConfig struct {
 	ServerScheme   string
 	PollInterval   int
 	ReportInterval int
+	HashKey        string
 }

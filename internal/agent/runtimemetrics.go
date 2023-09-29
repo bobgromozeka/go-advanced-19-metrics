@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"runtime"
 
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
+
 	"github.com/bobgromozeka/metrics/internal/metrics"
 )
 
@@ -13,41 +16,56 @@ var runtimeMetricsTypes = map[string]string{
 }
 
 type runtimeMetrics struct {
-	Alloc         uint64
-	TotalAlloc    uint64
-	Sys           uint64
-	Lookups       uint64
-	Mallocs       uint64
-	Frees         uint64
-	HeapAlloc     uint64
-	HeapSys       uint64
-	HeapIdle      uint64
-	HeapInuse     uint64
-	HeapReleased  uint64
-	HeapObjects   uint64
-	StackInuse    uint64
-	StackSys      uint64
-	MSpanInuse    uint64
-	MSpanSys      uint64
-	MCacheInuse   uint64
-	MCacheSys     uint64
-	BuckHashSys   uint64
-	GCSys         uint64
-	OtherSys      uint64
-	NextGC        uint64
-	LastGC        uint64
-	PauseTotalNs  uint64
-	NumGC         uint32
-	NumForcedGC   uint32
-	GCCPUFraction float64
-	PollCount     uint64
-	RandomValue   float64
+	Alloc          uint64
+	TotalAlloc     uint64
+	Sys            uint64
+	Lookups        uint64
+	Mallocs        uint64
+	Frees          uint64
+	HeapAlloc      uint64
+	HeapSys        uint64
+	HeapIdle       uint64
+	HeapInuse      uint64
+	HeapReleased   uint64
+	HeapObjects    uint64
+	StackInuse     uint64
+	StackSys       uint64
+	MSpanInuse     uint64
+	MSpanSys       uint64
+	MCacheInuse    uint64
+	MCacheSys      uint64
+	BuckHashSys    uint64
+	GCSys          uint64
+	OtherSys       uint64
+	NextGC         uint64
+	LastGC         uint64
+	PauseTotalNs   uint64
+	NumGC          uint32
+	NumForcedGC    uint32
+	GCCPUFraction  float64
+	PollCount      uint64
+	RandomValue    float64
+	TotalMemory    uint64
+	FreeMemory     uint64
+	CPUUtilization []float64
 }
 
-func fillRuntimeMetrics(rm *runtimeMetrics) {
+func getRuntimeMetrics() (runtimeMetrics, error) {
+	rnd := rand.Float64()
+	rm := runtimeMetrics{}
+
 	ms := runtime.MemStats{}
 	runtime.ReadMemStats(&ms)
-	rnd := rand.Float64()
+
+	vm, err := mem.VirtualMemory()
+	if err != nil {
+		return rm, err
+	}
+
+	cts, cpuErr := cpu.Times(true)
+	if cpuErr != nil {
+		return rm, cpuErr
+	}
 
 	rm.Alloc = ms.Alloc
 	rm.BuckHashSys = ms.BuckHashSys
@@ -78,4 +96,12 @@ func fillRuntimeMetrics(rm *runtimeMetrics) {
 	rm.TotalAlloc = ms.TotalAlloc
 	rm.PollCount++
 	rm.RandomValue = rnd * 1000
+	rm.TotalMemory = vm.Total
+	rm.FreeMemory = vm.Free
+
+	for _, cpuN := range cts {
+		rm.CPUUtilization = append(rm.CPUUtilization, cpuN.System)
+	}
+
+	return rm, nil
 }

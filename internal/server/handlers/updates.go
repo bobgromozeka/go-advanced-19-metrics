@@ -2,20 +2,33 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
+	"github.com/bobgromozeka/metrics/internal"
+	"github.com/bobgromozeka/metrics/internal/hash"
+	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
-func Updates(s storage.Storage) http.HandlerFunc {
+func Updates(s storage.Storage, hashKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var requestMetrics []metrics.RequestPayload
 
-		decoder := json.NewDecoder(r.Body)
-
-		if err := decoder.Decode(&requestMetrics); err != nil {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
 			http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if sum := r.Header.Get(internal.HTTPCheckSumHeader); sum != "" && !hash.IsValidSum(sum, string(body), hashKey) {
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+
+		if jsonErr := json.Unmarshal(body, &requestMetrics); jsonErr != nil {
+			http.Error(w, "Bad request: "+jsonErr.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -29,8 +42,12 @@ func Updates(s storage.Storage) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+
+		responseBody := []byte(`{"success":true}`)
+		helpers.SignResponse(w, responseBody, hashKey, internal.HTTPCheckSumHeader)
+
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success":true}`))
+		w.Write(responseBody)
 	}
 }
 

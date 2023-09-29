@@ -6,4 +6,5 @@ type StartupConfig struct {
 	FileStoragePath string
 	Restore         bool
 	DatabaseDsn     string
+	HashKey         string
 }

@@ -17,6 +17,7 @@ const (
 	FileStoragePath = "FILE_STORAGE_PATH"
 	Restore         = "RESTORE"
 	DatabaseDsn     = "DATABASE_DSN"
+	Key             = "KEY"
 )
 
 func parseFlags() {
@@ -28,6 +29,7 @@ func parseFlags() {
 		&startupConfig.DatabaseDsn, "d", "",
 		"Postgresql data source name (connection string like postgres://username:password@localhost:5432/database_name)",
 	)
+	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
 
 	flag.Parse()
 }
@@ -58,6 +60,10 @@ func parseEnv() {
 
 	if dsn := os.Getenv(DatabaseDsn); dsn != "" {
 		startupConfig.DatabaseDsn = dsn
+	}
+
+	if key := os.Getenv(Key); key != "" {
+		startupConfig.HashKey = key
 	}
 }
 

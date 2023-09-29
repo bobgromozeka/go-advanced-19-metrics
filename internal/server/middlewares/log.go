@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bobgromozeka/metrics/internal/log"
-
 	"go.uber.org/zap"
+
+	"github.com/bobgromozeka/metrics/internal/log"
 )
 
 func WithLogging(logPaths []string) func(handler http.Handler) http.Handler {
@@ -33,7 +33,8 @@ func loggingHandler(next http.Handler, logger *zap.Logger) http.Handler {
 		next.ServeHTTP(lw, r)
 		requestTime := time.Since(timeStart)
 
-		logger.Info("Got request",
+		logger.Info(
+			"Got request",
 			zap.String("method", r.Method),
 			zap.String("endpoint", r.URL.Path),
 			zap.Duration("duration", requestTime),

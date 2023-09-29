@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strconv"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
+	"github.com/bobgromozeka/metrics/internal"
+	"github.com/bobgromozeka/metrics/internal/hash"
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
-
-	"github.com/go-resty/resty/v2"
 )
 
-func reportToServer(serverAddr string, rm runtimeMetrics) {
+func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
 
 	payloads := makeBodiesFromStructure(rm)
 
@@ -21,10 +24,9 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 		return
 	}
 
-	client := resty.New()
-
 	//resty client has jitter func to calc wait time between attempts by default (1 + 2^attempt sec)
-	client.
+	client := resty.
+		New().
 		SetRetryCount(3).
 		SetRetryWaitTime(time.Second * 1)
 
@@ -32,6 +34,11 @@ func reportToServer(serverAddr string, rm runtimeMetrics) {
 	if err != nil {
 		log.Println("Could not encode request: ", err)
 		return
+	}
+
+	signature := hash.Sign(hashKey, encodedPayload)
+	if signature != "" {
+		client.SetHeader(internal.HTTPCheckSumHeader, signature)
 	}
 
 	gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
@@ -58,8 +65,17 @@ func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 		for i := 0; i < v.NumField(); i++ {
 			fieldV := v.Field(i)
 			fieldT := t.Field(i)
-			if payload := makeBodyFromStructField(fieldV, fieldT); payload != nil {
-				payloads = append(payloads, *payload)
+			if fieldV.Kind() == reflect.Slice {
+				for j := 0; j < fieldV.Len(); j++ {
+					sliceElV := fieldV.Index(j)
+					if payload := makeBodyFromStructField(sliceElV, fieldT.Name+strconv.Itoa(j)); payload != nil {
+						payloads = append(payloads, *payload)
+					}
+				}
+			} else {
+				if payload := makeBodyFromStructField(fieldV, fieldT.Name); payload != nil {
+					payloads = append(payloads, *payload)
+				}
 			}
 		}
 	}
@@ -67,14 +83,14 @@ func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 	return payloads
 }
 
-func makeBodyFromStructField(v reflect.Value, t reflect.StructField) *metrics.RequestPayload {
+func makeBodyFromStructField(v reflect.Value, name string) *metrics.RequestPayload {
 	metricsType := metrics.GaugeType
-	if mt, ok := runtimeMetricsTypes[t.Name]; ok {
+	if mt, ok := runtimeMetricsTypes[name]; ok {
 		metricsType = mt
 	}
 
 	rp := metrics.RequestPayload{
-		ID:    t.Name,
+		ID:    name,
 		MType: metricsType,
 	}
 

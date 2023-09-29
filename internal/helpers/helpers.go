@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"log"
+	"net/http"
 	"strconv"
+
+	"github.com/bobgromozeka/metrics/internal/hash"
 )
 
 func StrToInt(s string) int {
@@ -28,4 +31,11 @@ func Gzip(b []byte) ([]byte, error) {
 	}
 
 	return resBuf.Bytes(), nil
+}
+
+func SignResponse(w http.ResponseWriter, body []byte, key string, header string) {
+	if key != "" {
+		h := hash.New(key)
+		w.Header().Set(header, h.Sha256(string(body)))
+	}
 }

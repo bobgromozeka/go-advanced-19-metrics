@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/bobgromozeka/metrics/internal/metrics"
 	"github.com/bobgromozeka/metrics/internal/server/storage"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func Get(s storage.Storage) http.HandlerFunc {
