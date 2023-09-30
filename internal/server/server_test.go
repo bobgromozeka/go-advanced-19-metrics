@@ -20,8 +20,6 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/update", nil)
 	httpW := httptest.NewRecorder()
-	defer httpW.Result().Body.Close()
-	defer req.Body.Close()
 
 	stor := storage.NewMemory()
 	server := New(
@@ -31,10 +29,15 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 	)
 
 	server.ServeHTTP(httpW, req)
+	result := httpW.Result()
+	defer result.Body.Close()
 
-	resp, _ := io.ReadAll(httpW.Result().Body)
+	respBody, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
 
-	assert.Equal(t, "Bad request: EOF\n", string(resp))
+	assert.Equal(t, "Bad request: EOF\n", string(respBody))
 	assert.Equal(t, http.StatusBadRequest, httpW.Code)
 }
 
