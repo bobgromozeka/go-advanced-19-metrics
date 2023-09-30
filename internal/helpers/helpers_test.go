@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGzip(t *testing.T) {
@@ -19,4 +21,9 @@ func TestGzip(t *testing.T) {
 	if string(unzippedStr) != str {
 		t.Errorf("unzipped string should be equal with initial")
 	}
+}
+
+func TestSignResponse(t *testing.T) {
+	assert.Equal(t, 123, StrToInt("123"))
+	assert.Equal(t, 0, StrToInt("123sdf"))
 }

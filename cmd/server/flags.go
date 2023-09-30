@@ -27,7 +27,7 @@ func parseFlags() {
 	flag.BoolVar(&startupConfig.Restore, "r", true, "Restore metrics from file on server start or not")
 	flag.StringVar(
 		&startupConfig.DatabaseDsn, "d", "",
-		"Postgresql data source name (connection string like postgres://username:password@localhost:5432/database_name)",
+		"Postgresql data source name (connection string like postgres://practicum:practicum@localhost:5432/practicum)",
 	)
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
 
