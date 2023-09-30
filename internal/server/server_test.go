@@ -21,6 +21,7 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 	req := httptest.NewRequest("POST", "/update", nil)
 	httpW := httptest.NewRecorder()
 	defer httpW.Result().Body.Close()
+	defer req.Body.Close()
 
 	stor := storage.NewMemory()
 	server := New(
