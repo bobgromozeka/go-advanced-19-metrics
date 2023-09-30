@@ -30,10 +30,10 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	response, _ := io.ReadAll(httpW.Result().Body)
+	resp, _ := io.ReadAll(httpW.Result().Body)
 	httpW.Result().Body.Close()
 
-	assert.Equal(t, "Bad request: EOF\n", string(response))
+	assert.Equal(t, "Bad request: EOF\n", string(resp))
 	assert.Equal(t, http.StatusBadRequest, httpW.Code)
 }
 
@@ -52,10 +52,10 @@ func TestUpdateJSON_WrongMetricsType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	response, _ := io.ReadAll(httpW.Result().Body)
+	resp, _ := io.ReadAll(httpW.Result().Body)
 	httpW.Result().Body.Close()
 
-	assert.Equal(t, "Wrong metrics type\n", string(response))
+	assert.Equal(t, "Wrong metrics type\n", string(resp))
 	assert.Equal(t, http.StatusBadRequest, httpW.Code)
 }
 
@@ -76,11 +76,11 @@ func TestUpdateJSON_CounterType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	response, _ := io.ReadAll(httpW.Result().Body)
+	resp, _ := io.ReadAll(httpW.Result().Body)
 	httpW.Result().Body.Close()
 
 	assert.Equal(t, "application/json", httpW.Header().Get("Content-Type"))
-	assert.Equal(t, `{"id":"id","type":"counter","delta":42}`+"\n", string(response))
+	assert.Equal(t, `{"id":"id","type":"counter","delta":42}`+"\n", string(resp))
 	assert.Equal(t, http.StatusOK, httpW.Code)
 }
 
@@ -101,10 +101,10 @@ func TestUpdateJSON_GaugeType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	response, _ := io.ReadAll(httpW.Result().Body)
+	resp, _ := io.ReadAll(httpW.Result().Body)
 	httpW.Result().Body.Close()
 
 	assert.Equal(t, "application/json", httpW.Header().Get("Content-Type"))
-	assert.Equal(t, `{"id":"id","type":"gauge","value":33}`+"\n", string(response))
+	assert.Equal(t, `{"id":"id","type":"gauge","value":33}`+"\n", string(resp))
 	assert.Equal(t, http.StatusOK, httpW.Code)
 }
