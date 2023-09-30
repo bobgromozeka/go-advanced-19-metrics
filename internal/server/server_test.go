@@ -57,9 +57,15 @@ func TestUpdateJSON_WrongMetricsType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	resp, _ := io.ReadAll(httpW.Result().Body)
+	result := httpW.Result()
+	defer result.Body.Close()
 
-	assert.Equal(t, "Wrong metrics type\n", string(resp))
+	respBody, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+
+	assert.Equal(t, "Wrong metrics type\n", string(respBody))
 	assert.Equal(t, http.StatusBadRequest, httpW.Code)
 }
 
@@ -81,10 +87,16 @@ func TestUpdateJSON_CounterType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	resp, _ := io.ReadAll(httpW.Result().Body)
+	result := httpW.Result()
+	defer result.Body.Close()
+
+	respBody, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
 
 	assert.Equal(t, "application/json", httpW.Header().Get("Content-Type"))
-	assert.Equal(t, `{"id":"id","type":"counter","delta":42}`+"\n", string(resp))
+	assert.Equal(t, `{"id":"id","type":"counter","delta":42}`+"\n", string(respBody))
 	assert.Equal(t, http.StatusOK, httpW.Code)
 }
 
@@ -106,9 +118,15 @@ func TestUpdateJSON_GaugeType(t *testing.T) {
 
 	server.ServeHTTP(httpW, req)
 
-	resp, _ := io.ReadAll(httpW.Result().Body)
+	result := httpW.Result()
+	defer result.Body.Close()
+
+	respBody, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
 
 	assert.Equal(t, "application/json", httpW.Header().Get("Content-Type"))
-	assert.Equal(t, `{"id":"id","type":"gauge","value":33}`+"\n", string(resp))
+	assert.Equal(t, `{"id":"id","type":"gauge","value":33}`+"\n", string(respBody))
 	assert.Equal(t, http.StatusOK, httpW.Code)
 }
