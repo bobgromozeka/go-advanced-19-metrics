@@ -42,6 +42,7 @@ func (gzr *Reader) Close() error {
 	return gzr.zr.Close()
 }
 
+// NewGzipWriter Creates new gzip compressor to use with http.ResponseWriter.
 func NewGzipWriter(w http.ResponseWriter) *Writer {
 	gzw := gzip.NewWriter(w)
 
@@ -51,6 +52,7 @@ func NewGzipWriter(w http.ResponseWriter) *Writer {
 	}
 }
 
+// NewGzipReader Creates new gzip decompressor to use with any reader
 func NewGzipReader(r io.ReadCloser) (*Reader, error) {
 	gzr, err := gzip.NewReader(r)
 	if err != nil {

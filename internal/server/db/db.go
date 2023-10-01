@@ -8,6 +8,7 @@ import (
 
 var pgxConnection *pgx.Conn
 
+// Connect connects to postgres DB using specified dsn.
 func Connect(dsn string) error {
 	if conn, connErr := pgx.Connect(context.Background(), dsn); connErr != nil {
 		return connErr
@@ -18,6 +19,7 @@ func Connect(dsn string) error {
 	return nil
 }
 
+// Connection return postgres connection.
 func Connection() *pgx.Conn {
 	return pgxConnection
 }

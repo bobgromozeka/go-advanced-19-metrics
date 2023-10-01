@@ -8,6 +8,8 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
+// GetAll Returns all saved metrics.
+// Format: metricsName: metricsValue. Content-Type: text/html.
 func GetAll(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		gaugeMetrics, gErr := s.GetAllGaugeMetrics(r.Context())

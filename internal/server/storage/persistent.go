@@ -9,12 +9,14 @@ import (
 	"time"
 )
 
+// PersistentStorage Wrapper for adding file persistence for any storages that implement Storage interface.
 type PersistentStorage struct {
 	Storage
 	persistencePath string
 	syncPersisting  bool
 }
 
+// NewPersistenceStorage Creates persistence storage wrapper with specified configuration PersistenceSettings.
 func NewPersistenceStorage(s Storage, config PersistenceSettings) Storage {
 	ps := &PersistentStorage{
 		Storage:         s,

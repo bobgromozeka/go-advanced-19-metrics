@@ -8,6 +8,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/db"
 )
 
+// Ping Healthcheck endpoint. Returns http.StatusOK if db responded, http.StatusInternalServerError otherwise.
 func Ping(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()

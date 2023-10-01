@@ -7,6 +7,7 @@ import (
 type Gauge = float64
 type Counter = int64
 
+// RequestPayload payload for updating metrics in JSON format.
 type RequestPayload struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -14,6 +15,7 @@ type RequestPayload struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
+// Metrics types
 const (
 	GaugeType   = "gauge"
 	CounterType = "counter"
@@ -24,6 +26,7 @@ var validNames = map[string]struct{}{
 	CounterType: {},
 }
 
+// ParseCounter parses string into Counter type or error if not possible.
 func ParseCounter(value string) (Counter, error) {
 	v, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
@@ -33,6 +36,7 @@ func ParseCounter(value string) (Counter, error) {
 	return v, nil
 }
 
+// ParseGauge parses string into Gauge type or error if not possible.
 func ParseGauge(value string) (Gauge, error) {
 	v, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -42,6 +46,7 @@ func ParseGauge(value string) (Gauge, error) {
 	return v, nil
 }
 
+// IsValidValue Checks if value is valid according to specified metrics type.
 func IsValidValue(metricsType string, value string) bool {
 	isValid := false
 
@@ -57,6 +62,7 @@ func IsValidValue(metricsType string, value string) bool {
 	return isValid
 }
 
+// IsValidType Checks if metrics type is valid
 func IsValidType(metricsType string) bool {
 	_, ok := validNames[metricsType]
 	return ok
