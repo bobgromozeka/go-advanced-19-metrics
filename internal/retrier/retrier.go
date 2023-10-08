@@ -7,9 +7,9 @@ import (
 
 // RetrierConfig Retrier configuration struct.
 type RetrierConfig struct {
+	WaitTimeIncreaseFunc *func(uint) uint
 	InitialWaitTime      time.Duration
 	RetriesCount         uint
-	WaitTimeIncreaseFunc *func(uint) uint
 }
 
 // Retrier Has functionality to repeat actions.
