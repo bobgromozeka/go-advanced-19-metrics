@@ -5,18 +5,21 @@ import (
 	"time"
 )
 
+// RetrierConfig Retrier configuration struct.
 type RetrierConfig struct {
 	InitialWaitTime      time.Duration
 	RetriesCount         uint
 	WaitTimeIncreaseFunc *func(uint) uint
 }
 
+// Retrier Has functionality to repeat actions.
 type Retrier struct {
 	c          RetrierConfig
 	currentTry uint
 	stopped    bool
 }
 
+// NewRetrier Create new Retrier with specified functionality.
 func NewRetrier(config RetrierConfig) Retrier {
 	if config.WaitTimeIncreaseFunc == nil {
 		f := func(currentRetry uint) uint {
@@ -33,6 +36,7 @@ func NewRetrier(config RetrierConfig) Retrier {
 	}
 }
 
+// Try Returns true if next try should be performed.
 func (r *Retrier) Try(ctx context.Context) bool {
 	defer func() {
 		r.currentTry++
@@ -58,6 +62,7 @@ func (r *Retrier) Try(ctx context.Context) bool {
 	return false
 }
 
+// Stop stops Retrier. After this call next Retrier.Try will return false.
 func (r *Retrier) Stop() {
 	r.stopped = true
 }

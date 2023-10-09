@@ -12,7 +12,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
-func new(s storage.Storage, config StartupConfig) *chi.Mux {
+func New(s storage.Storage, config StartupConfig) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StripSlashes)
@@ -65,7 +65,7 @@ func Start(startupConfig StartupConfig) error {
 		)
 	}
 
-	server := new(s, startupConfig)
+	server := New(s, startupConfig)
 
 	return http.ListenAndServe(startupConfig.ServerAddr, server)
 }

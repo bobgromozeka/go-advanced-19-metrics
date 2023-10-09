@@ -10,6 +10,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/log"
 )
 
+// WithLogging Adds access middleware for http handlers. Logs handler method, endpoint path, request duration, status code and content length.
 func WithLogging(logPaths []string) func(handler http.Handler) http.Handler {
 	if len(logPaths) < 1 {
 		fmt.Println("No log paths specified, skipping WithLogging middleware")

@@ -6,6 +6,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/metrics"
 )
 
+// MemStorage Metrics InMemory storage.
 type MemStorage struct {
 	Metrics Metrics
 }

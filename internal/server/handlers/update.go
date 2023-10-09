@@ -11,6 +11,8 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
+// Update updates metrics data by specified type (gauge, counter).
+// Accepts data as query parameters: gauge type (type), metrics name (name), metrics value (value)
 func Update(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metricsType := chi.URLParam(r, "type")
@@ -42,6 +44,8 @@ func Update(s storage.Storage) http.HandlerFunc {
 	}
 }
 
+// UpdateJSON updates metrics data by specified type (gauge, counter).
+// Accepts data as post body (metrics.RequestPayload)
 func UpdateJSON(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var requestMetrics metrics.RequestPayload

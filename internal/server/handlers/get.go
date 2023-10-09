@@ -12,6 +12,8 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
+// Get Returns specified metrics.
+// Accept data as query parameters [type, name].
 func Get(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metricsType := chi.URLParam(r, "type")
@@ -30,6 +32,8 @@ func Get(s storage.Storage) http.HandlerFunc {
 	}
 }
 
+// GetJSON Returns specified metrics.
+// Accept data post json body metrics.RequestPayload.
 func GetJSON(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var requestMetrics metrics.RequestPayload

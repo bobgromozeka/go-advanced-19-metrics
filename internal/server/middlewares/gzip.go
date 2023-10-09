@@ -7,6 +7,8 @@ import (
 	"github.com/bobgromozeka/metrics/internal/compress/gzip"
 )
 
+// Gzippify Adds gzip encode/decode middleware into handlers chain (only for servers that implements std http library handlers, not with ctx).
+// Checks Accept-Encoding header before decoding and adds Content-Encoding header after encoding.
 func Gzippify(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

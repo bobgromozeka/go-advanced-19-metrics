@@ -8,6 +8,7 @@ import (
 
 var serverAddr string
 
+// Run Starts agent metrics collection and reporting to server.
 func Run(c StartupConfig) {
 	serverAddr = c.ServerScheme + "://" + c.ServerAddr
 

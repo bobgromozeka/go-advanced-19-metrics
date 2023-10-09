@@ -17,6 +17,7 @@ type Execer interface {
 	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
 }
 
+// DBStorage Postgres storage implementing Storage interface.
 type DBStorage struct {
 	*pgx.Conn
 }

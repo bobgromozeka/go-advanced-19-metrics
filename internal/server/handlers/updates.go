@@ -12,6 +12,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
+// Updates Batch metrics update.
 func Updates(s storage.Storage, hashKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var requestMetrics []metrics.RequestPayload
