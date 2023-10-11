@@ -5,6 +5,7 @@ import (
 )
 
 func main() {
+	printMetadata()
 	setupConfiguration()
 
 	agent.Run(startupConfig)
