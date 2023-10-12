@@ -63,9 +63,9 @@ func TestMemStorage_AddCounter(t *testing.T) {
 
 func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 	tests := []struct {
-		name   string
-		fields Metrics
 		want   CounterMetrics
+		fields Metrics
+		name   string
 	}{
 		{
 			name: "Can get all metrics",
@@ -93,9 +93,9 @@ func TestMemStorage_GetAllCounterMetrics(t *testing.T) {
 
 func TestMemStorage_GetAllGaugeMetrics(t *testing.T) {
 	tests := []struct {
-		name   string
 		fields Metrics
 		want   GaugeMetrics
+		name   string
 	}{
 		{
 			name: "Can get all metrics",

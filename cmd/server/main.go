@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	printMetadata()
 	setupConfiguration()
 
 	err := server.Start(startupConfig)

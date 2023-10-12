@@ -16,6 +16,7 @@ var runtimeMetricsTypes = map[string]string{
 }
 
 type runtimeMetrics struct {
+	CPUUtilization []float64
 	Alloc          uint64
 	TotalAlloc     uint64
 	Sys            uint64
@@ -47,7 +48,6 @@ type runtimeMetrics struct {
 	RandomValue    float64
 	TotalMemory    uint64
 	FreeMemory     uint64
-	CPUUtilization []float64
 }
 
 func getRuntimeMetrics() (runtimeMetrics, error) {

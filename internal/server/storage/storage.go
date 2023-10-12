@@ -11,7 +11,7 @@ var ErrWrongMetrics = errors.New("wrong metrics type")
 type GaugeMetrics map[string]float64
 type CounterMetrics map[string]int64
 
-// PersistenceSettings
+// PersistenceSettings should be supplied to PersistentStorage constructor
 // Path File path. Note that PersistentStorage saves data in JSON format.
 // Interval Seconds between saving data into file. If 0 - saves data synchronously on every update.
 // Restore Load saved data on application start or not

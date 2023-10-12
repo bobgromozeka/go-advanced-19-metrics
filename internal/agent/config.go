@@ -4,7 +4,7 @@ package agent
 type StartupConfig struct {
 	ServerAddr     string
 	ServerScheme   string
+	HashKey        string
 	PollInterval   int
 	ReportInterval int
-	HashKey        string
 }
