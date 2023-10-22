@@ -16,7 +16,7 @@ const (
 	ReportInterval = "REPORT_INTERVAL"
 	PollInterval   = "POLL_INTERVAL"
 	Key            = "KEY"
-	PublicKeyPath  = "PUBLIC_KEY_PATH"
+	PublicKeyPath  = "CRYPTO_KEY"
 )
 
 func parseFlags() {
@@ -25,7 +25,7 @@ func parseFlags() {
 	flag.IntVar(&startupConfig.PollInterval, "p", 2, "Metrics polling interval")
 	flag.IntVar(&startupConfig.ReportInterval, "r", 10, "Metrics reporting interval to server")
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to make request signature")
-	flag.StringVar(&startupConfig.PublicKeyPath, "pkp", "", "Public key for data encryption")
+	flag.StringVar(&startupConfig.PublicKeyPath, "ck", "./public.pem", "Public key for data encryption")
 
 	flag.Parse()
 }

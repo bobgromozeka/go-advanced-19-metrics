@@ -34,31 +34,25 @@ func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runt
 		SetRetryCount(3).
 		SetRetryWaitTime(time.Second * 1)
 
-	encodedPayload, err := json.Marshal(payloads)
+	payload, err := json.Marshal(payloads)
 	if err != nil {
 		log.Println("Could not encode request: ", err)
 		return
 	}
 
-	signature := hash.Sign(hashKey, encodedPayload)
+	signature := hash.Sign(hashKey, payload)
 	if signature != "" {
 		client.SetHeader(internal.HTTPCheckSumHeader, signature)
 	}
 
-	publicKeyBlock, _ := pem.Decode(publicKey)
-	parsedPublicKey, err := x509.ParsePKCS1PublicKey(publicKeyBlock.Bytes)
-	if err != nil {
-		log.Println("Could not parse public key: ", err)
-		return
+	payload, encryptErr := encryptData(payload, publicKey)
+	if encryptErr != nil {
+		fmt.Printf("Could not encrypt data: %v", encryptErr)
+	} else {
+		client.SetHeader(internal.RSAEncryptedHeader, "true")
 	}
 
-	encryptedData, err := rsa.EncryptPKCS1v15(rand.Reader, parsedPublicKey, encodedPayload)
-	if err != nil {
-		log.Println("Could not encrypt data: ", err)
-		return
-	}
-
-	gzippedPayload, gzErr := helpers.Gzip(encryptedData)
+	gzippedPayload, gzErr := helpers.Gzip(payload)
 	if gzErr != nil {
 		log.Println("Could not gzip request: ", gzErr)
 		return
@@ -135,4 +129,21 @@ func makeBodyFromStructField(v reflect.Value, name string) *metrics.RequestPaylo
 	}
 
 	return &rp
+}
+
+func encryptData(data []byte, key []byte) ([]byte, error) {
+	if len(key) < 1 {
+		publicKeyBlock, _ := pem.Decode(key)
+		parsedPublicKey, err := x509.ParsePKCS1PublicKey(publicKeyBlock.Bytes)
+		if err != nil {
+			return data, err
+		}
+
+		data, err = rsa.EncryptPKCS1v15(rand.Reader, parsedPublicKey, data)
+		if err != nil {
+			return data, err
+		}
+	}
+
+	return data, nil
 }

@@ -7,4 +7,5 @@ type StartupConfig struct {
 	HashKey         string
 	StoreInterval   uint
 	Restore         bool
+	PrivateKeyPath  string
 }

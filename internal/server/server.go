@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,7 +13,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
-func New(s storage.Storage, config StartupConfig) *chi.Mux {
+func New(s storage.Storage, config StartupConfig, privateKey []byte) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StripSlashes)
@@ -65,7 +66,12 @@ func Start(startupConfig StartupConfig) error {
 		)
 	}
 
-	server := New(s, startupConfig)
+	privateKey, readErr := os.ReadFile(startupConfig.PrivateKeyPath)
+	if readErr != nil {
+		return readErr
+	}
+
+	server := New(s, startupConfig, privateKey)
 
 	return http.ListenAndServe(startupConfig.ServerAddr, server)
 }

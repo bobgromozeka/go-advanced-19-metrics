@@ -18,6 +18,7 @@ const (
 	Restore         = "RESTORE"
 	DatabaseDsn     = "DATABASE_DSN"
 	Key             = "KEY"
+	PrivateKeyPath  = "CRYPTO_KEY"
 )
 
 func parseFlags() {
@@ -30,6 +31,7 @@ func parseFlags() {
 		"Postgresql data source name (connection string like postgres://practicum:practicum@localhost:5432/practicum)",
 	)
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
+	flag.StringVar(&startupConfig.PrivateKeyPath, "ck", "./private.pem", "Private key for data encryption")
 
 	flag.Parse()
 }
@@ -64,6 +66,10 @@ func parseEnv() {
 
 	if key := os.Getenv(Key); key != "" {
 		startupConfig.HashKey = key
+	}
+
+	if privateKeyPath := os.Getenv(PrivateKeyPath); privateKeyPath != "" {
+		startupConfig.PrivateKeyPath = privateKeyPath
 	}
 }
 
