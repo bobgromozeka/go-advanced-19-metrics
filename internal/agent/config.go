@@ -7,4 +7,5 @@ type StartupConfig struct {
 	HashKey        string
 	PollInterval   int
 	ReportInterval int
+	PublicKeyPath  string
 }

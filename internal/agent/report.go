@@ -1,7 +1,11 @@
 package agent
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"reflect"
@@ -16,7 +20,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/metrics"
 )
 
-func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
+func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runtimeMetrics) {
 
 	payloads := makeBodiesFromStructure(rm)
 
@@ -41,7 +45,20 @@ func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
 		client.SetHeader(internal.HTTPCheckSumHeader, signature)
 	}
 
-	gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
+	publicKeyBlock, _ := pem.Decode(publicKey)
+	parsedPublicKey, err := x509.ParsePKCS1PublicKey(publicKeyBlock.Bytes)
+	if err != nil {
+		log.Println("Could not parse public key: ", err)
+		return
+	}
+
+	encryptedData, err := rsa.EncryptPKCS1v15(rand.Reader, parsedPublicKey, encodedPayload)
+	if err != nil {
+		log.Println("Could not encrypt data: ", err)
+		return
+	}
+
+	gzippedPayload, gzErr := helpers.Gzip(encryptedData)
 	if gzErr != nil {
 		log.Println("Could not gzip request: ", gzErr)
 		return
