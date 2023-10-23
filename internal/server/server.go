@@ -108,7 +108,10 @@ func Start(ctx context.Context, startupConfig StartupConfig) error {
 	go func() {
 		<-ctx.Done()
 
-		server.Close()
+		hardCtx, hardCancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer hardCancel()
+
+		server.Shutdown(hardCtx)
 	}()
 
 	wg.Wait()
