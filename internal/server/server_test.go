@@ -25,7 +25,7 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 	server := New(
 		stor, StartupConfig{
 			HashKey: Key,
-		},
+		}, []byte{},
 	)
 
 	server.ServeHTTP(httpW, req)
@@ -52,7 +52,7 @@ func TestUpdateJSON_WrongMetricsType(t *testing.T) {
 	server := New(
 		stor, StartupConfig{
 			HashKey: Key,
-		},
+		}, []byte{},
 	)
 
 	server.ServeHTTP(httpW, req)
@@ -80,7 +80,7 @@ func TestUpdateJSON_CounterType(t *testing.T) {
 	server := New(
 		stor, StartupConfig{
 			HashKey: Key,
-		},
+		}, []byte{},
 	)
 
 	stor.AddCounter(context.Background(), "id", 20)
@@ -111,7 +111,7 @@ func TestUpdateJSON_GaugeType(t *testing.T) {
 	server := New(
 		stor, StartupConfig{
 			HashKey: Key,
-		},
+		}, []byte{},
 	)
 
 	stor.SetGauge(context.Background(), "id", 123.123)
