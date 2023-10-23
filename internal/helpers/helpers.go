@@ -3,9 +3,14 @@ package helpers
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/bobgromozeka/metrics/internal/hash"
 )
@@ -41,4 +46,15 @@ func SignResponse(w http.ResponseWriter, body []byte, key string, header string)
 		h := hash.New(key)
 		w.Header().Set(header, h.Sha256(string(body)))
 	}
+}
+
+func SetupGracefulShutdown(cancel context.CancelFunc) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		<-sig
+		fmt.Println("Stopping application.....")
+		cancel()
+	}()
 }

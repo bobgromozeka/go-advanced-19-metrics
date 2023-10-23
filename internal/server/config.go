@@ -1,11 +1,11 @@
 package server
 
 type StartupConfig struct {
-	ServerAddr      string
-	FileStoragePath string
-	DatabaseDsn     string
-	HashKey         string
-	StoreInterval   uint
-	Restore         bool
-	PrivateKeyPath  string
+	ServerAddr      string `json:"address"`
+	FileStoragePath string `json:"store_file"`
+	DatabaseDsn     string `json:"database_dsn"`
+	HashKey         string `json:"hash_key"`
+	StoreInterval   uint   `json:"store_interval"`
+	Restore         bool   `json:"restore"`
+	PrivateKeyPath  string `json:"crypto_key"`
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 )
 
 var startupConfig agent.StartupConfig
+
+const JSONConfigPath = "CONFIG"
 
 const (
 	Address        = "ADDRESS"
@@ -62,7 +65,25 @@ func parseEnv() {
 	}
 }
 
+func parseJSONConfig() {
+	if os.Getenv(JSONConfigPath) == "" {
+		return
+	}
+
+	conf, err := os.Open(JSONConfigPath)
+	if err != nil {
+		fmt.Printf("Could not open json config: %v \n", err)
+	}
+
+	decoder := json.NewDecoder(conf)
+
+	if decodeErr := decoder.Decode(&startupConfig); decodeErr != nil {
+		fmt.Printf("Could not open parse json config: %v \n", decodeErr)
+	}
+}
+
 func setupConfiguration() {
+	parseJSONConfig()
 	parseFlags()
 	parseEnv()
 }
