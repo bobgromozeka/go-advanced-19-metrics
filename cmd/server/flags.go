@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -11,6 +13,8 @@ import (
 
 var startupConfig server.StartupConfig
 
+const JSONConfigPath = "CONFIG"
+
 const (
 	Address         = "ADDRESS"
 	StoreInterval   = "STORE_INTERVAL"
@@ -18,6 +22,7 @@ const (
 	Restore         = "RESTORE"
 	DatabaseDsn     = "DATABASE_DSN"
 	Key             = "KEY"
+	PrivateKeyPath  = "CRYPTO_KEY"
 )
 
 func parseFlags() {
@@ -30,6 +35,7 @@ func parseFlags() {
 		"Postgresql data source name (connection string like postgres://practicum:practicum@localhost:5432/practicum)",
 	)
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
+	flag.StringVar(&startupConfig.PrivateKeyPath, "ck", "./private.pem", "Private key for data encryption")
 
 	flag.Parse()
 }
@@ -65,9 +71,31 @@ func parseEnv() {
 	if key := os.Getenv(Key); key != "" {
 		startupConfig.HashKey = key
 	}
+
+	if privateKeyPath := os.Getenv(PrivateKeyPath); privateKeyPath != "" {
+		startupConfig.PrivateKeyPath = privateKeyPath
+	}
+}
+
+func parseJSONConfig() {
+	if os.Getenv(JSONConfigPath) == "" {
+		return
+	}
+
+	conf, err := os.Open(JSONConfigPath)
+	if err != nil {
+		fmt.Printf("Could not open json config: %v \n", err)
+	}
+
+	decoder := json.NewDecoder(conf)
+
+	if decodeErr := decoder.Decode(&startupConfig); decodeErr != nil {
+		fmt.Printf("Could not open parse json config: %v \n", decodeErr)
+	}
 }
 
 func setupConfiguration() {
+	parseJSONConfig()
 	parseFlags()
 	parseEnv()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -11,11 +12,14 @@ import (
 
 var startupConfig agent.StartupConfig
 
+const JSONConfigPath = "CONFIG"
+
 const (
 	Address        = "ADDRESS"
 	ReportInterval = "REPORT_INTERVAL"
 	PollInterval   = "POLL_INTERVAL"
 	Key            = "KEY"
+	PublicKeyPath  = "CRYPTO_KEY"
 )
 
 func parseFlags() {
@@ -24,6 +28,7 @@ func parseFlags() {
 	flag.IntVar(&startupConfig.PollInterval, "p", 2, "Metrics polling interval")
 	flag.IntVar(&startupConfig.ReportInterval, "r", 10, "Metrics reporting interval to server")
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to make request signature")
+	flag.StringVar(&startupConfig.PublicKeyPath, "ck", "./public.pem", "Public key for data encryption")
 
 	flag.Parse()
 }
@@ -54,9 +59,31 @@ func parseEnv() {
 	if key := os.Getenv(Key); key != "" {
 		startupConfig.HashKey = key
 	}
+
+	if publicKeyPath := os.Getenv(PublicKeyPath); publicKeyPath != "" {
+		startupConfig.PublicKeyPath = publicKeyPath
+	}
+}
+
+func parseJSONConfig() {
+	if os.Getenv(JSONConfigPath) == "" {
+		return
+	}
+
+	conf, err := os.Open(JSONConfigPath)
+	if err != nil {
+		fmt.Printf("Could not open json config: %v \n", err)
+	}
+
+	decoder := json.NewDecoder(conf)
+
+	if decodeErr := decoder.Decode(&startupConfig); decodeErr != nil {
+		fmt.Printf("Could not open parse json config: %v \n", decodeErr)
+	}
 }
 
 func setupConfiguration() {
+	parseJSONConfig()
 	parseFlags()
 	parseEnv()
 }

@@ -1,7 +1,12 @@
 package agent
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"reflect"
@@ -16,7 +21,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/metrics"
 )
 
-func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
+func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runtimeMetrics) {
 
 	payloads := makeBodiesFromStructure(rm)
 
@@ -29,25 +34,33 @@ func reportToServer(serverAddr string, hashKey string, rm runtimeMetrics) {
 		New().
 		SetRetryCount(3).
 		SetRetryWaitTime(time.Second * 1)
+	req := client.R()
 
-	encodedPayload, err := json.Marshal(payloads)
+	payload, err := json.Marshal(payloads)
 	if err != nil {
 		log.Println("Could not encode request: ", err)
 		return
 	}
 
-	signature := hash.Sign(hashKey, encodedPayload)
+	signature := hash.Sign(hashKey, payload)
 	if signature != "" {
-		client.SetHeader(internal.HTTPCheckSumHeader, signature)
+		req.SetHeader(internal.HTTPCheckSumHeader, signature)
 	}
 
-	gzippedPayload, gzErr := helpers.Gzip(encodedPayload)
+	payload, encryptErr := encryptData(payload, publicKey)
+	if encryptErr != nil {
+		fmt.Printf("Could not encrypt data: %v", encryptErr)
+	} else {
+		req.SetHeader(internal.RSAEncryptedHeader, "true")
+	}
+
+	gzippedPayload, gzErr := helpers.Gzip(payload)
 	if gzErr != nil {
 		log.Println("Could not gzip request: ", gzErr)
 		return
 	}
 
-	_, _ = client.R().
+	_, _ = req.
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
@@ -118,4 +131,36 @@ func makeBodyFromStructField(v reflect.Value, name string) *metrics.RequestPaylo
 	}
 
 	return &rp
+}
+
+func encryptData(data []byte, key []byte) ([]byte, error) {
+	if len(key) > 0 {
+		publicKeyBlock, _ := pem.Decode(key)
+		parsedPublicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes)
+		if err != nil {
+			return data, err
+		}
+
+		res := make([]byte, 0)
+
+		h := sha256.New()
+		step := parsedPublicKey.(*rsa.PublicKey).Size() - 2*h.Size() - 2
+
+		for i := 0; i < len(data); i += step {
+			end := i + step
+			if end > len(data) {
+				end = len(data)
+			}
+
+			enc, err := rsa.EncryptOAEP(h, rand.Reader, parsedPublicKey.(*rsa.PublicKey), data[i:end], []byte("data"))
+			if err != nil {
+				return data, err
+			}
+
+			res = append(res, enc...)
+		}
+
+		return res, nil
+	}
+	return data, nil
 }

@@ -1,7 +1,13 @@
 package server
 
 import (
+	"context"
+	"errors"
+	"log"
 	"net/http"
+	"os"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,7 +18,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
-func New(s storage.Storage, config StartupConfig) *chi.Mux {
+func New(s storage.Storage, config StartupConfig, privateKey []byte) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StripSlashes)
@@ -26,6 +32,7 @@ func New(s storage.Storage, config StartupConfig) *chi.Mux {
 					},
 				),
 				middlewares.Gzippify,
+				middlewares.Rsa(privateKey),
 			)
 			r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
 			r.Get("/value/{type}/{name}", handlers.Get(s))
@@ -40,7 +47,9 @@ func New(s storage.Storage, config StartupConfig) *chi.Mux {
 	return r
 }
 
-func Start(startupConfig StartupConfig) error {
+func Start(ctx context.Context, startupConfig StartupConfig) error {
+	var wg sync.WaitGroup
+
 	var s storage.Storage
 
 	if startupConfig.DatabaseDsn != "" {
@@ -54,6 +63,19 @@ func Start(startupConfig StartupConfig) error {
 			panic(ddlErr)
 		}
 		s = storage.NewPG(db.Connection())
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			<-ctx.Done()
+
+			hardCtx, hardCancel := context.WithTimeout(context.Background(), time.Second*15)
+			defer hardCancel()
+
+			db.Connection().Close(hardCtx)
+		}()
+
 	} else {
 		s = storage.NewMemory()
 		s = storage.NewPersistenceStorage(
@@ -65,7 +87,34 @@ func Start(startupConfig StartupConfig) error {
 		)
 	}
 
-	server := New(s, startupConfig)
+	privateKey, readErr := os.ReadFile(startupConfig.PrivateKeyPath)
+	if readErr != nil {
+		return readErr
+	}
 
-	return http.ListenAndServe(startupConfig.ServerAddr, server)
+	router := New(s, startupConfig, privateKey)
+	server := &http.Server{Addr: startupConfig.ServerAddr, Handler: router}
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		err := server.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalln(err)
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+
+		hardCtx, hardCancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer hardCancel()
+
+		server.Shutdown(hardCtx)
+	}()
+
+	wg.Wait()
+
+	return nil
 }
