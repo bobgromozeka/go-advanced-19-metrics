@@ -65,7 +65,7 @@ func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runt
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
-		SetHeader(internal.RealIpHeader, utils.GetLocalIPv4().String()).
+		SetHeader(internal.RealIPHeader, utils.GetLocalIPv4().String()).
 		SetBody(gzippedPayload).
 		Post(serverAddr + "/updates")
 }

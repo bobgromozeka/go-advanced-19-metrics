@@ -30,14 +30,18 @@ func TrustedSubnet(subnet string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				realIPs := r.Header.Values(internal.RealIpHeader)
-				if len(realIPs) > 0 {
-					clientIP := net.ParseIP(realIPs[0])
-					if !ipNet.Contains(clientIP) {
-						w.WriteHeader(http.StatusForbidden)
-						return
-					}
+				realIPs := r.Header.Values(internal.RealIPHeader)
+				if len(realIPs) < 1 {
+					w.WriteHeader(http.StatusForbidden)
+					return
 				}
+
+				clientIP := net.ParseIP(realIPs[0])
+				if !ipNet.Contains(clientIP) {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+
 				next.ServeHTTP(w, r)
 			},
 		)
