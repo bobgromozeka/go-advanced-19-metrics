@@ -19,6 +19,7 @@ import (
 	"github.com/bobgromozeka/metrics/internal/hash"
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
+	"github.com/bobgromozeka/metrics/internal/utils"
 )
 
 func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runtimeMetrics) {
@@ -64,6 +65,7 @@ func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runt
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
+		SetHeader(internal.RealIpHeader, utils.GetLocalIPv4().String()).
 		SetBody(gzippedPayload).
 		Post(serverAddr + "/updates")
 }

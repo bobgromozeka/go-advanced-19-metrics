@@ -23,6 +23,7 @@ const (
 	DatabaseDsn     = "DATABASE_DSN"
 	Key             = "KEY"
 	PrivateKeyPath  = "CRYPTO_KEY"
+	TrustedSubnet   = "TRUSTED_SUBNET"
 )
 
 func parseFlags() {
@@ -36,6 +37,7 @@ func parseFlags() {
 	)
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
 	flag.StringVar(&startupConfig.PrivateKeyPath, "ck", "./private.pem", "Private key for data encryption")
+	flag.StringVar(&startupConfig.TrustedSubnet, "t", "", "Subnet to permit requests from")
 
 	flag.Parse()
 }
@@ -74,6 +76,10 @@ func parseEnv() {
 
 	if privateKeyPath := os.Getenv(PrivateKeyPath); privateKeyPath != "" {
 		startupConfig.PrivateKeyPath = privateKeyPath
+	}
+
+	if ts := os.Getenv(TrustedSubnet); ts != "" {
+		startupConfig.TrustedSubnet = ts
 	}
 }
 

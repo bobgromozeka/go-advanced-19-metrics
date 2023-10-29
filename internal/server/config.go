@@ -8,4 +8,5 @@ type StartupConfig struct {
 	StoreInterval   uint   `json:"store_interval"`
 	Restore         bool   `json:"restore"`
 	PrivateKeyPath  string `json:"crypto_key"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 }

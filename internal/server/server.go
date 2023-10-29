@@ -31,6 +31,7 @@ func New(s storage.Storage, config StartupConfig, privateKey []byte) *chi.Mux {
 						"./http.log",
 					},
 				),
+				middlewares.TrustedSubnet(config.TrustedSubnet),
 				middlewares.Gzippify,
 				middlewares.Rsa(privateKey),
 			)
