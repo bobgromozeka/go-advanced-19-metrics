@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package proto_interfaces;
+
+option go_package = "github.com/bobgromozeka/metrics/internal/proto-interfaces";
+
+service Metrics {
+  rpc BatchUpdate(BatchUpdateRequest) returns (Empty);
+}
+
+message Empty {}
+
+message Entry {
+  optional sfixed64 Delta = 1;
+  optional double Value = 2;
+  string ID = 3;
+  string MType = 4;
+}
+
+message BatchUpdateRequest {
+  repeated Entry data = 1;
+}

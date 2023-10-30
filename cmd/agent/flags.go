@@ -20,6 +20,7 @@ const (
 	PollInterval   = "POLL_INTERVAL"
 	Key            = "KEY"
 	PublicKeyPath  = "CRYPTO_KEY"
+	ReportGRPC     = "REPORT_GRPC"
 )
 
 func parseFlags() {
@@ -29,6 +30,7 @@ func parseFlags() {
 	flag.IntVar(&startupConfig.ReportInterval, "r", 10, "Metrics reporting interval to server")
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to make request signature")
 	flag.StringVar(&startupConfig.PublicKeyPath, "ck", "./public.pem", "Public key for data encryption")
+	flag.BoolVar(&startupConfig.ReportGRPC, "rg", true, "report grpc server. http will be used if false")
 
 	flag.Parse()
 }
@@ -62,6 +64,10 @@ func parseEnv() {
 
 	if publicKeyPath := os.Getenv(PublicKeyPath); publicKeyPath != "" {
 		startupConfig.PublicKeyPath = publicKeyPath
+	}
+
+	if b, err := strconv.ParseBool(os.Getenv(ReportGRPC)); err == nil && b {
+		startupConfig.ReportGRPC = true
 	}
 }
 

@@ -9,52 +9,62 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-
 	"github.com/bobgromozeka/metrics/internal/server/db"
-	"github.com/bobgromozeka/metrics/internal/server/handlers"
-	"github.com/bobgromozeka/metrics/internal/server/middlewares"
+	grpcServer "github.com/bobgromozeka/metrics/internal/server/grpc"
+	httpServer "github.com/bobgromozeka/metrics/internal/server/http"
 	"github.com/bobgromozeka/metrics/internal/server/storage"
 )
 
-func New(s storage.Storage, config StartupConfig, privateKey []byte) *chi.Mux {
-	r := chi.NewRouter()
+func Start(ctx context.Context, startupConfig StartupConfig) {
+	s, storageStoppedChan := createStorage(ctx, startupConfig)
 
-	r.Use(middleware.StripSlashes)
+	privateKey, readErr := os.ReadFile(startupConfig.PrivateKeyPath)
+	if readErr != nil {
+		log.Fatalln(readErr)
+	}
 
-	r.Group(
-		func(r chi.Router) {
-			r.Use(
-				middlewares.WithLogging(
-					[]string{
-						"./http.log",
-					},
-				),
-				middlewares.TrustedSubnet(config.TrustedSubnet),
-				middlewares.Gzippify,
-				middlewares.Rsa(privateKey),
-			)
-			r.Post("/update/{type}/{name}/{value}", handlers.Update(s))
-			r.Get("/value/{type}/{name}", handlers.Get(s))
-			r.Post("/update", handlers.UpdateJSON(s))
-			r.Post("/updates", handlers.Updates(s, config.HashKey))
-			r.Post("/value", handlers.GetJSON(s))
-			r.Get("/", handlers.GetAll(s))
-		},
-	)
-	r.Get("/ping", handlers.Ping)
-
-	return r
-}
-
-func Start(ctx context.Context, startupConfig StartupConfig) error {
 	var wg sync.WaitGroup
 
-	var s storage.Storage
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := httpServer.Start(
+			ctx, httpServer.Config{
+				Addr:          startupConfig.HttpAddr,
+				PrivateKey:    privateKey,
+				TrustedSubnet: startupConfig.TrustedSubnet,
+				HashKey:       startupConfig.HashKey,
+			}, s,
+		)
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalln(err)
+		}
+	}()
 
-	if startupConfig.DatabaseDsn != "" {
-		connErr := db.Connect(startupConfig.DatabaseDsn)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := grpcServer.Start(
+			ctx, grpcServer.Config{
+				Addr:           startupConfig.GRPCAddr,
+				TrustedSubnet:  startupConfig.TrustedSubnet,
+				PrivateKeyPath: startupConfig.GRPCPrivateKeyPath,
+				CertPath:       startupConfig.GRPCCertPath,
+			}, s,
+		)
+		log.Fatalln(err)
+	}()
+
+	wg.Wait()            // Wait for both servers to stop
+	<-storageStoppedChan // Wait for storage stop (in database case)
+}
+
+func createStorage(ctx context.Context, sc StartupConfig) (storage.Storage, <-chan struct{}) {
+	var s storage.Storage
+	stoppedChan := make(chan struct{}, 1)
+
+	if sc.DatabaseDsn != "" {
+		connErr := db.Connect(sc.DatabaseDsn)
 		if connErr != nil {
 			panic(connErr)
 		}
@@ -65,10 +75,10 @@ func Start(ctx context.Context, startupConfig StartupConfig) error {
 		}
 		s = storage.NewPG(db.Connection())
 
-		wg.Add(1)
-
 		go func() {
-			defer wg.Done()
+			defer func() {
+				stoppedChan <- struct{}{}
+			}()
 			<-ctx.Done()
 
 			hardCtx, hardCancel := context.WithTimeout(context.Background(), time.Second*15)
@@ -81,41 +91,13 @@ func Start(ctx context.Context, startupConfig StartupConfig) error {
 		s = storage.NewMemory()
 		s = storage.NewPersistenceStorage(
 			s, storage.PersistenceSettings{
-				Path:     startupConfig.FileStoragePath,
-				Interval: startupConfig.StoreInterval,
-				Restore:  startupConfig.Restore,
+				Path:     sc.FileStoragePath,
+				Interval: sc.StoreInterval,
+				Restore:  sc.Restore,
 			},
 		)
+		stoppedChan <- struct{}{} // We do not need to wait for any signals when using memo storage
 	}
 
-	privateKey, readErr := os.ReadFile(startupConfig.PrivateKeyPath)
-	if readErr != nil {
-		return readErr
-	}
-
-	router := New(s, startupConfig, privateKey)
-	server := &http.Server{Addr: startupConfig.ServerAddr, Handler: router}
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		err := server.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalln(err)
-		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-
-		hardCtx, hardCancel := context.WithTimeout(context.Background(), time.Second*15)
-		defer hardCancel()
-
-		server.Shutdown(hardCtx)
-	}()
-
-	wg.Wait()
-
-	return nil
+	return s, stoppedChan
 }

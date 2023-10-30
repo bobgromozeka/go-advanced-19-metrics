@@ -8,19 +8,12 @@ import (
 	"time"
 )
 
-var serverAddr string
-
 // Run Starts agent metrics collection and reporting to server.
 func Run(ctx context.Context, c StartupConfig) {
-	serverAddr = c.ServerScheme + "://" + c.ServerAddr
 
 	wg := sync.WaitGroup{}
 
 	rmChan := make(chan runtimeMetrics, 1)
-	publicKey, err := os.ReadFile(c.PublicKeyPath)
-	if err != nil {
-		log.Fatalf("Could not open public key file: %v", err)
-	}
 
 	wg.Add(1)
 
@@ -33,8 +26,16 @@ func Run(ctx context.Context, c StartupConfig) {
 
 	go func() {
 		defer wg.Done()
-		runReporting(ctx, rmChan, c.HashKey, publicKey, c.ReportInterval)
+		if c.ReportGRPC {
+			serverAddr := c.ServerAddr
+			runReportingGRPC(ctx, serverAddr, rmChan, c.PublicKeyPath, c.ReportInterval)
+		} else {
+			serverAddr := c.ServerScheme + "://" + c.ServerAddr
+			runReportingHTTP(ctx, serverAddr, rmChan, c.HashKey, c.PublicKeyPath, c.ReportInterval)
+		}
 	}()
+
+	log.Println("Started polling and sending data to server.....")
 
 	wg.Wait()
 }
@@ -63,9 +64,28 @@ func runCollecting(ctx context.Context, c chan runtimeMetrics, pollInterval int)
 	}
 }
 
-func runReporting(ctx context.Context, c chan runtimeMetrics, hashKey string, publicKey []byte, reportInterval int) {
+func runReportingGRPC(ctx context.Context, serverAddr string, c chan runtimeMetrics, certPath string, reportInterval int) {
 	for {
-		reportToServer(serverAddr, hashKey, publicKey, <-c)
+		reportToGRPCServer(serverAddr, certPath, <-c)
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		time.Sleep(time.Second * time.Duration(reportInterval))
+	}
+}
+
+func runReportingHTTP(ctx context.Context, serverAddr string, c chan runtimeMetrics, hashKey string, publicKeyPath string, reportInterval int) {
+	publicKey, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		log.Fatalf("Could not open public key file: %v", err)
+	}
+
+	for {
+		reportToHTTPServer(serverAddr, hashKey, publicKey, <-c)
 
 		select {
 		case <-ctx.Done():
