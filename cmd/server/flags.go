@@ -30,7 +30,7 @@ const (
 )
 
 func parseFlags() {
-	flag.StringVar(&startupConfig.HttpAddr, "a", ":8080", "address and port to run http server")
+	flag.StringVar(&startupConfig.HTTPAddr, "a", ":8080", "address and port to run http server")
 	flag.StringVar(&startupConfig.GRPCAddr, "ga", ":9999", "address and port to run grpc server")
 	flag.UintVar(&startupConfig.StoreInterval, "i", 300, "Interval of storing metrics to file")
 	flag.StringVar(&startupConfig.FileStoragePath, "f", "/tmp/metrics-db.json", "Metrics file storage path")
@@ -53,7 +53,7 @@ func parseFlags() {
 
 func parseEnv() {
 	if addr := os.Getenv(HTTPAddress); addr != "" {
-		startupConfig.HttpAddr = addr
+		startupConfig.HTTPAddr = addr
 	}
 
 	if addr := os.Getenv(GRPCAddress); addr != "" {

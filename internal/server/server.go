@@ -30,7 +30,7 @@ func Start(ctx context.Context, startupConfig StartupConfig) {
 		defer wg.Done()
 		err := httpServer.Start(
 			ctx, httpServer.Config{
-				Addr:          startupConfig.HttpAddr,
+				Addr:          startupConfig.HTTPAddr,
 				PrivateKey:    privateKey,
 				TrustedSubnet: startupConfig.TrustedSubnet,
 				HashKey:       startupConfig.HashKey,

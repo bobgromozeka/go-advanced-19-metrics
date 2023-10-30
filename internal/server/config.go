@@ -1,7 +1,7 @@
 package server
 
 type StartupConfig struct {
-	HttpAddr           string `json:"http_address"`
+	HTTPAddr           string `json:"http_address"`
 	GRPCAddr           string `json:"grpc_address"`
 	FileStoragePath    string `json:"store_file"`
 	DatabaseDsn        string `json:"database_dsn"`
