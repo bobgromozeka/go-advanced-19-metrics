@@ -14,7 +14,6 @@ import (
 
 type Config struct {
 	Addr           string
-	TrustedSubnet  string // TODO
 	PrivateKeyPath string
 	CertPath       string
 }

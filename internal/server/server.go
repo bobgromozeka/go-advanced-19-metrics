@@ -47,7 +47,6 @@ func Start(ctx context.Context, startupConfig StartupConfig) {
 		err := grpcServer.Start(
 			ctx, grpcServer.Config{
 				Addr:           startupConfig.GRPCAddr,
-				TrustedSubnet:  startupConfig.TrustedSubnet,
 				PrivateKeyPath: startupConfig.GRPCPrivateKeyPath,
 				CertPath:       startupConfig.GRPCCertPath,
 			}, s,

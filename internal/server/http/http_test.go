@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"context"
@@ -23,7 +23,7 @@ func TestUpdateJSON_BadRequest(t *testing.T) {
 
 	stor := storage.NewMemory()
 	server := New(
-		stor, StartupConfig{
+		stor, Config{
 			HashKey: Key,
 		}, []byte{},
 	)
@@ -50,7 +50,7 @@ func TestUpdateJSON_WrongMetricsType(t *testing.T) {
 
 	stor := storage.NewMemory()
 	server := New(
-		stor, StartupConfig{
+		stor, Config{
 			HashKey: Key,
 		}, []byte{},
 	)
@@ -78,7 +78,7 @@ func TestUpdateJSON_CounterType(t *testing.T) {
 
 	stor := storage.NewMemory()
 	server := New(
-		stor, StartupConfig{
+		stor, Config{
 			HashKey: Key,
 		}, []byte{},
 	)
@@ -109,7 +109,7 @@ func TestUpdateJSON_GaugeType(t *testing.T) {
 
 	stor := storage.NewMemory()
 	server := New(
-		stor, StartupConfig{
+		stor, Config{
 			HashKey: Key,
 		}, []byte{},
 	)
