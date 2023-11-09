@@ -8,4 +8,5 @@ type StartupConfig struct {
 	PollInterval   int    `json:"poll_interval"`
 	ReportInterval int    `json:"report_interval"`
 	PublicKeyPath  string `json:"crypto_key"`
+	ReportGRPC     bool   `json:"report_grpc"`
 }

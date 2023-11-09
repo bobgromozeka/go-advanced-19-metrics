@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -14,14 +15,18 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/bobgromozeka/metrics/internal"
 	"github.com/bobgromozeka/metrics/internal/hash"
 	"github.com/bobgromozeka/metrics/internal/helpers"
 	"github.com/bobgromozeka/metrics/internal/metrics"
+	proto_interfaces "github.com/bobgromozeka/metrics/internal/proto-interfaces"
+	"github.com/bobgromozeka/metrics/internal/utils"
 )
 
-func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runtimeMetrics) {
+func reportToHTTPServer(serverAddr string, hashKey string, publicKey []byte, rm runtimeMetrics) {
 
 	payloads := makeBodiesFromStructure(rm)
 
@@ -64,8 +69,36 @@ func reportToServer(serverAddr string, hashKey string, publicKey []byte, rm runt
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
+		SetHeader(internal.RealIPHeader, utils.GetLocalIPv4().String()).
 		SetBody(gzippedPayload).
 		Post(serverAddr + "/updates")
+}
+
+func reportToGRPCServer(serverAddr string, certPath string, rm runtimeMetrics) {
+	payloads := makeBodiesFromStructure(rm)
+	bur := metricPayloadsToGRPCPayload(payloads)
+
+	creds, err := credentials.NewClientTLSFromFile(
+		certPath, "x.test.example.com",
+	) // test certs are valid for this domain
+	if err != nil {
+		log.Println("Could not create creds for client", err)
+	}
+
+	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		log.Println("Error during creating grpc connection", err)
+	}
+
+	client := proto_interfaces.NewMetricsClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	_, err = client.BatchUpdate(ctx, bur)
+	if err != nil {
+		log.Println("Error during sending metrics to grpc server", err)
+	}
 }
 
 func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
@@ -94,6 +127,23 @@ func makeBodiesFromStructure(rm any) []metrics.RequestPayload {
 	}
 
 	return payloads
+}
+
+func metricPayloadsToGRPCPayload(rps []metrics.RequestPayload) *proto_interfaces.BatchUpdateRequest {
+	bur := &proto_interfaces.BatchUpdateRequest{}
+
+	for _, payload := range rps {
+		bur.Data = append(
+			bur.Data, &proto_interfaces.Entry{
+				Delta: payload.Delta,
+				Value: payload.Value,
+				ID:    payload.ID,
+				MType: payload.MType,
+			},
+		)
+	}
+
+	return bur
 }
 
 func makeBodyFromStructField(v reflect.Value, name string) *metrics.RequestPayload {

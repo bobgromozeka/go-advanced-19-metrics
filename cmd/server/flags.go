@@ -16,17 +16,22 @@ var startupConfig server.StartupConfig
 const JSONConfigPath = "CONFIG"
 
 const (
-	Address         = "ADDRESS"
-	StoreInterval   = "STORE_INTERVAL"
-	FileStoragePath = "FILE_STORAGE_PATH"
-	Restore         = "RESTORE"
-	DatabaseDsn     = "DATABASE_DSN"
-	Key             = "KEY"
-	PrivateKeyPath  = "CRYPTO_KEY"
+	HTTPAddress        = "HTTP_ADDRESS"
+	GRPCAddress        = "GRPC_ADDRESS"
+	StoreInterval      = "STORE_INTERVAL"
+	FileStoragePath    = "FILE_STORAGE_PATH"
+	Restore            = "RESTORE"
+	DatabaseDsn        = "DATABASE_DSN"
+	Key                = "KEY"
+	PrivateKeyPath     = "CRYPTO_KEY"
+	TrustedSubnet      = "TRUSTED_SUBNET"
+	GRPCPrivateKeyPath = "GRPC_PRIVATE_KEY_PATH"
+	GRPCCertPath       = "GRPC_CERT_PATH"
 )
 
 func parseFlags() {
-	flag.StringVar(&startupConfig.ServerAddr, "a", ":8080", "address and port to run server")
+	flag.StringVar(&startupConfig.HTTPAddr, "a", ":8080", "address and port to run http server")
+	flag.StringVar(&startupConfig.GRPCAddr, "ga", ":9999", "address and port to run grpc server")
 	flag.UintVar(&startupConfig.StoreInterval, "i", 300, "Interval of storing metrics to file")
 	flag.StringVar(&startupConfig.FileStoragePath, "f", "/tmp/metrics-db.json", "Metrics file storage path")
 	flag.BoolVar(&startupConfig.Restore, "r", true, "Restore metrics from file on server start or not")
@@ -35,14 +40,24 @@ func parseFlags() {
 		"Postgresql data source name (connection string like postgres://practicum:practicum@localhost:5432/practicum)",
 	)
 	flag.StringVar(&startupConfig.HashKey, "k", "", "Key to validate requests and sign responses")
-	flag.StringVar(&startupConfig.PrivateKeyPath, "ck", "./private.pem", "Private key for data encryption")
+	flag.StringVar(&startupConfig.PrivateKeyPath, "ck", "./private.key", "Private key for data encryption")
+	flag.StringVar(&startupConfig.TrustedSubnet, "t", "", "Subnet to permit requests from")
+	flag.StringVar(
+		&startupConfig.GRPCPrivateKeyPath, "gpk", "./internal/server/grpc/x509/server_key.pem",
+		"grpc private key path",
+	)
+	flag.StringVar(&startupConfig.GRPCCertPath, "gc", "./internal/server/grpc/x509/server_cert.pem", "grpc cert path")
 
 	flag.Parse()
 }
 
 func parseEnv() {
-	if addr := os.Getenv(Address); addr != "" {
-		startupConfig.ServerAddr = addr
+	if addr := os.Getenv(HTTPAddress); addr != "" {
+		startupConfig.HTTPAddr = addr
+	}
+
+	if addr := os.Getenv(GRPCAddress); addr != "" {
+		startupConfig.GRPCAddr = addr
 	}
 
 	if interval := os.Getenv(StoreInterval); interval != "" {
@@ -74,6 +89,18 @@ func parseEnv() {
 
 	if privateKeyPath := os.Getenv(PrivateKeyPath); privateKeyPath != "" {
 		startupConfig.PrivateKeyPath = privateKeyPath
+	}
+
+	if ts := os.Getenv(TrustedSubnet); ts != "" {
+		startupConfig.TrustedSubnet = ts
+	}
+
+	if gpk := os.Getenv(GRPCPrivateKeyPath); gpk != "" {
+		startupConfig.GRPCPrivateKeyPath = gpk
+	}
+
+	if gc := os.Getenv(GRPCCertPath); gc != "" {
+		startupConfig.GRPCCertPath = gc
 	}
 }
 
